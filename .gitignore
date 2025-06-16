@@ -1,0 +1,16 @@
+# Root .gitignore for TheImitationGame
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.log
+.DS_Store
+Thumbs.db
+node_modules/
+dist/
+bin/
+obj/
+.env
+.history/
+.idea/

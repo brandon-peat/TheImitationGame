@@ -2,12 +2,12 @@ using TheImitationGame.Api.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var allowAnyOrigin = "_allowAnyOrigin";
+var allowLocalhost5173 = "_allowLocalhost5173";
 
 builder.Services.AddCors(options =>
 {
     options.AddPolicy(
-        name: allowAnyOrigin,
+        name: allowLocalhost5173,
         policy =>
         {
             policy.WithOrigins("http://localhost:5173")
@@ -21,8 +21,6 @@ builder.Services.AddCors(options =>
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-
-// Add SignalR services
 builder.Services.AddSignalR();
 
 var app = builder.Build();
@@ -33,14 +31,13 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseCors(allowAnyOrigin);
+app.UseCors(allowLocalhost5173);
 
 app.UseHttpsRedirection();
 app.UseAuthorization();
 
 app.MapControllers();
 
-// Map SignalR hubs
 app.MapHub<GameHub>("/game-hub");
 
 app.Run();

@@ -11,18 +11,19 @@ import connection from './signalr-connection';
 function App() {
   const [mode, setMode] = useState<'select' | 'create' | 'join'>('select');
   const [gameCode, setGameCode] = useState<string>('');
+  const [joinResultMessage, setJoinResultMessage] = useState<string>('');
 
   const changeMode = async (newMode: 'select' | 'create' | 'join') => {
-
-    if(newMode === 'select' && mode === 'create') {
+    if (newMode === 'select' && mode === 'create') {
       await connection.invoke('LeaveGame');
       setGameCode('');
     }
     
-    if(newMode === 'create') {
+    if (newMode === 'create') {
       try {
-        const code = await connection.invoke<string>('CreateGame');
-        setGameCode(code);
+        await connection.invoke<string>('CreateGame').then((code) => {
+          setGameCode(code);
+        });
       } catch (error) {
         console.error('Error creating game:', error);
       }
@@ -31,18 +32,38 @@ function App() {
     setMode(newMode);
   };
 
+  const submitCode = async (code: string) => {
+    if (!code) return;
+
+    try {
+      await connection.invoke('JoinGame', code).then(() => {
+        setJoinResultMessage(`Game ${code} joined!`);
+      });
+    }
+    catch (error: any) {
+      const message = error?.message || error;
+      if (message.includes('Game does not exist')) {
+        setJoinResultMessage(`Game ${code} does not exist.`);
+      }
+      else if (message.includes('Game has already been joined')) {
+        setJoinResultMessage(`Game ${code} is full.`);
+      }
+      else {
+        console.error('Unknown error joining game:', error);
+        setJoinResultMessage(`Unknown error joining game ${code}.`);
+      }
+    }
+  }
+
   useEffect(() => {
     // LATER: turn on listeners here
-    console.log(connection.state);
-    if(connection.state === 'Disconnected') {
+    
+    if (connection.state === 'Disconnected') {
       connection.start();
     }
 
     return () => {
       // LATER: turn off listeners here
-      if(connection.state === 'Connected') {
-        connection.stop();
-      }
     }
   }, []);
 
@@ -86,12 +107,18 @@ function App() {
             />
           )}
 
-          {mode === 'join' && (
+          {mode === 'join' && (<>
             <TextField className='code-input'
               label='Enter Game Code'
               variant='outlined'
+              onKeyDown={(e) => {
+                if (e.key === 'Enter')
+                  submitCode((e.target as HTMLInputElement).value);
+              }}
             />
-          )}
+
+            <p className="join-result-message"> {joinResultMessage} </p>
+          </>)}
         </div>
       )}
     </div>

@@ -9,16 +9,17 @@ function Join() {
   const navigate = useNavigate();
 
   const [joinResultMessage, setJoinResultMessage] = useState<string>('');
+  const [gameJoined, setGameJoined] = useState<boolean>(false);
 
   const submitCode = async (code: string) => {
     if (!code) return;
 
     try {
       await connection.invoke('JoinGame', code).then(() => {
-        setJoinResultMessage(`Game ${code} joined!`);
+        setGameJoined(true);
       });
     }
-    catch (error: any) {
+    catch (error: any) { // TODO: fix this terrible error handling
       const message = error?.message || error;
       if (message.includes('Game does not exist')) {
         setJoinResultMessage(`Game ${code} does not exist.`);
@@ -34,14 +35,15 @@ function Join() {
   }
 
   return (
-    <div className={styles['mode-area']}>
+    <div className='mode-area'>
       <IconButton onClick={() => navigate('/')}>
         <ArrowBackIcon />
       </IconButton>
 
-      <TextField className={styles['code-input']}
-        label='Enter Game Code'
-        variant='outlined'
+      <TextField className='code-input'
+        disabled={gameJoined}
+        label={gameJoined ? 'Game Joined' : 'Enter Game Code'}
+        variant={gameJoined ? 'filled' : 'outlined'}
         onKeyDown={(e) => {
           if (e.key === 'Enter')
             submitCode((e.target as HTMLInputElement).value);

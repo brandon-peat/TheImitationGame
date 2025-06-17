@@ -3,7 +3,6 @@ import { IconButton, TextField } from "@mui/material";
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import connection from '../signalr-connection';
-import styles from './Host.module.css';
 
 function Host() {
   const [gameCode, setGameCode] = useState<string>('');
@@ -31,12 +30,12 @@ function Host() {
   }, []);
 
   return (
-    <div className={styles['mode-area']}>
+    <div className='mode-area'>
       <IconButton onClick={() => navigate('/')}>
         <ArrowBackIcon />
       </IconButton>
 
-      <TextField className={styles['code-input']}
+      <TextField className='code-input'
         disabled
         label='Share this code with the other player!'
         defaultValue= {gameCode}

@@ -10,3 +10,19 @@
   min-width: 20rem;
   margin: auto;
 }
+
+/* For Host and Join */
+.code-input {
+  width: 100%;
+  max-width: 20rem;
+}
+
+.mode-area {
+  display: flex;
+  flex-wrap: wrap;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  gap: 1.5rem;
+  width: 100%;
+}

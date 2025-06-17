@@ -10,25 +10,3 @@
   min-width: 20rem;
   margin: auto;
 }
-
-.buttons {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 3rem;
-  flex-wrap: wrap;
-}
-
-.code-input {
-  width: 100%;
-  max-width: 20rem;
-}
-
-.mode-area {
-  display: flex;
-  flex-direction: row;
-  justify-content: center;
-  align-items: center;
-  gap: 1.5rem;
-  width: 100%;
-}

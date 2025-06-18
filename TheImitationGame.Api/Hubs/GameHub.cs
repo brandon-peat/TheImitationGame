@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.SignalR;
 using System.Collections.Concurrent;
+using TheImitationGame.Api.Models;
 
 namespace TheImitationGame.Api.Hubs
 {
@@ -16,7 +17,7 @@ namespace TheImitationGame.Api.Hubs
         {
             string gameId = Context.ConnectionId;
             if (!Games.TryAdd(gameId, null))
-                throw new HubException("You have already created a game which has not ended.");
+                throw new GameHubException(GameHubErrorCode.AlreadyCreatedGame);
 
             await Groups.AddToGroupAsync(Context.ConnectionId, gameId);
             return gameId;
@@ -31,19 +32,19 @@ namespace TheImitationGame.Api.Hubs
         public async Task JoinGame(string gameId)
         {
             if (Games.Any(kvp => kvp.Value == Context.ConnectionId))
-                throw new HubException("You are already in a game.");
+                throw new GameHubException(GameHubErrorCode.AlreadyJoinedGame);
 
             if (!Games.TryGetValue(gameId, out var joiner))
-                throw new HubException("Game does not exist.");
+                throw new GameHubException(GameHubErrorCode.GameNotFound);
 
             if (gameId == Context.ConnectionId)
-                throw new HubException("You cannot join your own game.");
+                throw new GameHubException(GameHubErrorCode.CannotJoinOwnGame);
 
             if (joiner != null)
-                throw new HubException("Game has already been joined.");
+                throw new GameHubException(GameHubErrorCode.GameFull);
 
             if (!Games.TryUpdate(gameId, Context.ConnectionId, null))
-                throw new HubException("Failed to join the game.");
+                throw new GameHubException(GameHubErrorCode.UnknownError);
 
             await Groups.AddToGroupAsync(Context.ConnectionId, gameId);
         }

@@ -13,7 +13,7 @@ function Host({connectionReady}: {connectionReady: boolean}) {
     if (!connectionReady) return;
 
     const createGame = async () => {
-        await connection.invoke<string>('CreateGame')
+        connection.invoke<string>('CreateGame')
           .then((code) => setGameCode(code))
           .catch((error) => console.error('Error creating game:', error));
     };

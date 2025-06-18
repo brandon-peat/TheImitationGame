@@ -4,30 +4,29 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import connection from '../signalr-connection';
 
-function Host() {
+function Host({connectionReady}: {connectionReady: boolean}) {
   const [gameCode, setGameCode] = useState<string>('');
   
   const navigate = useNavigate();
 
   useEffect(() => {
+    if (!connectionReady) return;
+
     const createGame = async () => {
-      try {
-        await connection.invoke<string>('CreateGame').then((code) => {
-          setGameCode(code);
-        });
-      } catch (error) {
-        console.error('Error creating game:', error);
-      }
+        await connection.invoke<string>('CreateGame')
+          .then((code) => setGameCode(code))
+          .catch((error) => console.error('Error creating game:', error));
     };
 
     createGame();
 
     return () => {
-      connection.invoke('LeaveGame').catch((error) => {
-        console.error('Error leaving game:', error);
-      });
+      connection.invoke('LeaveGame')
+        .catch((error) => {
+          console.error('Error leaving game:', error);
+        });
     }
-  }, []);
+  }, [connectionReady]);
 
   return (
     <div className='mode-area'>

@@ -1,5 +1,5 @@
 import Typography from '@mui/material/Typography';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';
 import './App.css';
 import Home from './Home/Home';
@@ -9,11 +9,13 @@ import connection from './signalr-connection';
 
 
 function App() {
+  const [connectionReady, setConnectionReady] = useState(false);
+
   useEffect(() => {
     // LATER: turn on listeners here
     
     if (connection.state === 'Disconnected') {
-      connection.start();
+      connection.start().then(() => setConnectionReady(true));
     }
 
     return () => {
@@ -30,7 +32,7 @@ function App() {
       <Router>
         <Routes>
           <Route path = '/' element={<Home />} />
-          <Route path = '/host' element={<Host />} />
+          <Route path = '/host' element={<Host connectionReady={connectionReady} />} />
           <Route path = '/join' element={<Join />} />
         </Routes>
       </Router>

@@ -4,9 +4,9 @@ using TheImitationGame.Api.Models;
 
 namespace TheImitationGame.Api.Hubs
 {
-    public class GameHub : Hub
+    public class GameHub(IGamesStore games) : Hub
     {
-        private static readonly ConcurrentDictionary<string, string?> Games = new();
+        private readonly IGamesStore Games = games;
 
         public override async Task OnConnectedAsync()
         {

@@ -23,6 +23,8 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddSignalR();
 
+builder.Services.AddSingleton<IGamesStore, InMemoryGamesStore>();
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())

@@ -184,9 +184,11 @@ namespace TheImitationGame.Tests
         }
 
         [Fact]
-        public async Task JoinGame_WithValidGameId_AddsJoinerToGameAndGroup()
+        public async Task JoinGame_WithValidGameId_AddsJoinerToGameAndGroupAndNotifiesHost()
         {
             // Arrange
+            var mockHostClient = new Mock<ISingleClientProxy>();
+
             mockGamesStore
                 .Setup(games => games.TryGetValue(hostConnectionId, out It.Ref<string?>.IsAny))
                 .Returns((string key, out string? joiner) =>
@@ -197,6 +199,9 @@ namespace TheImitationGame.Tests
             mockGamesStore
                 .Setup(games => games.TryUpdate(hostConnectionId, connectionId, null))
                 .Returns(true);
+            mockClients
+                .Setup(clients => clients.Client(hostConnectionId))
+                .Returns(mockHostClient.Object);
 
             // Act
             await hub.JoinGame(hostConnectionId);
@@ -208,6 +213,14 @@ namespace TheImitationGame.Tests
             );
             mockGroups.Verify(
                 groups => groups.AddToGroupAsync(connectionId, hostConnectionId, default),
+                Times.Once
+            );
+            mockHostClient.Verify(
+                client => client.SendCoreAsync(
+                    "GameJoined",
+                    It.Is<object?[]>(args => args.Length == 0),
+                    default
+                ),
                 Times.Once
             );
         }

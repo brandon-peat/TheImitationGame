@@ -23,6 +23,11 @@
   flex-direction: row;
   justify-content: center;
   align-items: center;
-  gap: 1.5rem;
+  gap: 0.5rem;
   width: 100%;
+}
+
+.flex-break {
+  flex-basis: 100%;
+  height: 0;
 }

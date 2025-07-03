@@ -1,16 +1,32 @@
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { IconButton, TextField } from "@mui/material";
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import connection from '../signalr-connection';
-import styles from './Join.module.css';
 import { JoinGameErrorCodes } from './JoinGameErrorCode';
 
-function Join() {
+function Join({connectionReady}: {connectionReady: boolean}) {
   const navigate = useNavigate();
 
   const [joinResultMessage, setJoinResultMessage] = useState<string>('');
   const [gameJoined, setGameJoined] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (!connectionReady) return;
+
+    const handleHostLeft = () => {
+      setGameJoined(false);
+      setJoinResultMessage('Host has left the game.');
+    };
+    connection.on('HostLeft', handleHostLeft);
+
+    return () => {
+      connection.invoke('LeaveGame')
+        .catch((error) => {
+          console.error('Error leaving game:', error);
+        });
+    }
+  }, [connectionReady]);
 
   const submitGameCode = async (gameCode: string) => {
     if (!gameCode) return;
@@ -39,7 +55,7 @@ function Join() {
         else if (errorCode === JoinGameErrorCodes.GameFull)
           setJoinResultMessage(`Game with code ${gameCode} is already full. Try joining a different game.`);
 
-        // these errors should be made impossible by how our UI is set up
+        // these errors should be made impossible by the UI
         if (
           errorCode === JoinGameErrorCodes.AlreadyJoinedGame ||
           errorCode === JoinGameErrorCodes.CannotJoinOwnGame ||
@@ -53,13 +69,21 @@ function Join() {
 
   return (
     <div className='mode-area'>
-      <IconButton onClick={() => navigate('/')}>
+      <IconButton onClick={() => {
+          navigate('/');
+          if (gameJoined) {
+            connection.invoke('LeaveGame')
+              .catch((error) => {
+                console.error('Error leaving game:', error);
+              });
+          }
+      }}>
         <ArrowBackIcon />
       </IconButton>
 
       <TextField className='code-input'
         disabled={gameJoined}
-        label={gameJoined ? 'Game Joined' : 'Enter Game Code'}
+        label={gameJoined ? 'Waiting for host to start . . .' : 'Enter Game Code'}
         variant={gameJoined ? 'filled' : 'outlined'}
         onKeyDown={(e) => {
           if (e.key === 'Enter') {
@@ -70,7 +94,9 @@ function Join() {
         }}
       />
 
-      <p className={styles['join-result-message']}>
+      <div className='flex-break' />
+
+      <p>
         {joinResultMessage}
       </p>
     </div>

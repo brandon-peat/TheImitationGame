@@ -47,6 +47,7 @@ namespace TheImitationGame.Api.Hubs
                 throw new GameHubException(GameHubErrorCode.UnknownError);
 
             await Groups.AddToGroupAsync(Context.ConnectionId, gameId);
+            await Clients.Client(gameId).SendAsync("GameJoined");
         }
 
         public override async Task OnDisconnectedAsync(Exception? exception)

@@ -33,7 +33,7 @@ function App() {
         <Routes>
           <Route path = '/' element={<Home />} />
           <Route path = '/host' element={<Host connectionReady={connectionReady} />} />
-          <Route path = '/join' element={<Join />} />
+          <Route path = '/join' element={<Join connectionReady={connectionReady} />} />
         </Routes>
       </Router>
     </div>

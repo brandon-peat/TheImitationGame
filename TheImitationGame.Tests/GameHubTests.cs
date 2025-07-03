@@ -2,7 +2,6 @@ using Moq;
 using Microsoft.AspNetCore.SignalR;
 using TheImitationGame.Api.Hubs;
 using TheImitationGame.Api.Models;
-using Microsoft.AspNetCore.Connections.Features;
 
 namespace TheImitationGame.Tests
 {
@@ -94,7 +93,8 @@ namespace TheImitationGame.Tests
 
             mockGamesStore
                 .Setup(games => games.TryRemove(connectionId, out It.Ref<string?>.IsAny))
-                .Returns((string key, out string? value) => {
+                .Returns((string key, out string? value) =>
+                {
                     value = joinerConnectionId;
                     return true;
                 });
@@ -181,6 +181,135 @@ namespace TheImitationGame.Tests
             );
             mockGroups.VerifyNoOtherCalls();
             mockClients.VerifyNoOtherCalls();
+        }
+
+        [Fact]
+        public async Task JoinGame_WithValidGameId_AddsJoinerToGameAndGroup()
+        {
+            // Arrange
+            mockGamesStore
+                .Setup(games => games.TryGetValue(hostConnectionId, out It.Ref<string?>.IsAny))
+                .Returns((string key, out string? joiner) =>
+                {
+                    joiner = null;
+                    return true;
+                });
+            mockGamesStore
+                .Setup(games => games.TryUpdate(hostConnectionId, connectionId, null))
+                .Returns(true);
+
+            // Act
+            await hub.JoinGame(hostConnectionId);
+
+            // Assert
+            mockGamesStore.Verify(
+                store => store.TryUpdate(hostConnectionId, connectionId, null),
+                Times.Once
+            );
+            mockGroups.Verify(
+                groups => groups.AddToGroupAsync(connectionId, hostConnectionId, default),
+                Times.Once
+            );
+        }
+
+        [Fact]
+        public async Task JoinGame_WhenAlreadyInGame_ThrowsGameHubExceptionWithAlreadyJoinedGameError()
+        {
+            // Arrange
+            mockGamesStore
+                .Setup(games => games.Any(It.IsAny<Func<KeyValuePair<string, string?>, bool>>()))
+                .Returns(true);
+
+            // Act
+            async Task act() => await hub.JoinGame(hostConnectionId);
+
+            // Assert
+            var ex = await Assert.ThrowsAsync<GameHubException>(act);
+            Assert.Contains(GameHubErrorCode.AlreadyJoinedGame.ToString(), ex.Message);
+        }
+
+        [Fact]
+        public async Task JoinGame_WithInvalidGameCode_ThrowsGameHubExceptionWithGameNotFoundError()
+        {
+            // Arrange
+            mockGamesStore
+                .Setup(games => games.TryGetValue(hostConnectionId, out It.Ref<string?>.IsAny))
+                .Returns(false);
+
+            // Act
+            async Task act() => await hub.JoinGame(hostConnectionId);
+
+            // Assert
+            var ex = await Assert.ThrowsAsync<GameHubException>(act);
+            Assert.Contains(GameHubErrorCode.GameNotFound.ToString(), ex.Message);
+        }
+
+        [Fact]
+        public async Task JoinGame_WithOwnGameCode_ThrowsGameHubExceptionWithCannotJoinOwnGameError()
+        {
+            // Arrange
+            mockGamesStore
+                .Setup(games => games.TryGetValue(connectionId, out It.Ref<string?>.IsAny))
+                .Returns((string key, out string? joiner) =>
+                {
+                    joiner = null;
+                    return true;
+                });
+
+            // Act
+            async Task act() => await hub.JoinGame(connectionId);
+
+            // Assert
+            var ex = await Assert.ThrowsAsync<GameHubException>(act);
+            Assert.Contains(GameHubErrorCode.CannotJoinOwnGame.ToString(), ex.Message);
+        }
+
+        [Fact]
+        public async Task JoinGame_WhenGameIsFull_ThrowsGameHubExceptionWithGameFullError()
+        {
+            // Arrange
+            mockGamesStore
+                .Setup(games => games.TryGetValue(hostConnectionId, out It.Ref<string?>.IsAny))
+                .Returns((string key, out string? joiner) =>
+                {
+                    joiner = joinerConnectionId;
+                    return true;
+                });
+
+            // Act
+            async Task act() => await hub.JoinGame(hostConnectionId);
+
+            // Assert
+            var ex = await Assert.ThrowsAsync<GameHubException>(act);
+            Assert.Contains(GameHubErrorCode.GameFull.ToString(), ex.Message);
+        }
+
+        [Fact]
+        public async Task JoinGame_WithNullGameId_ThrowsGameNotFoundException()
+        {
+            // Arrange
+            string? gameId = null;
+
+            // Act
+            async Task act() => await hub.JoinGame(gameId);
+
+            // Assert
+            var ex = await Assert.ThrowsAsync<GameHubException>(act);
+            Assert.Contains(GameHubErrorCode.GameNotFound.ToString(), ex.Message);
+        }
+
+        [Fact]
+        public async Task JoinGame_WithEmptyGameId_ThrowsGameNotFoundException()
+        {
+            // Arrange
+            string? gameId = "";
+
+            // Act
+            async Task act() => await hub.JoinGame(gameId);
+
+            // Assert
+            var ex = await Assert.ThrowsAsync<GameHubException>(act);
+            Assert.Contains(GameHubErrorCode.GameNotFound.ToString(), ex.Message);
         }
     }
 }

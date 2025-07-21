@@ -1,5 +1,9 @@
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import { Button, IconButton, TextField } from "@mui/material";
+import { Button, FormControl, IconButton, TextField } from "@mui/material";
+import FormControlLabel from '@mui/material/FormControlLabel';
+import FormLabel from '@mui/material/FormLabel';
+import Radio from '@mui/material/Radio';
+import RadioGroup from '@mui/material/RadioGroup';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import connection from '../signalr-connection';
@@ -7,7 +11,8 @@ import connection from '../signalr-connection';
 function Host({connectionReady}: {connectionReady: boolean}) {
   const [gameCode, setGameCode] = useState<string>('');
   const [gameJoined, setGameJoined] = useState<boolean>(false);
-  
+  const [firstPlayer, setFirstPlayer] = useState<'Me' | 'Opponent' | 'Random'>('Me');
+
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -65,18 +70,38 @@ function Host({connectionReady}: {connectionReady: boolean}) {
       <div className='flex-break' />
 
       {gameJoined && (
-        <Button
-          variant='contained'
-          color='primary'
-          onClick={() => {
-            connection.invoke('StartGame')
-              .catch((error) => {
-                console.error('Error starting game:', error);
-              });
-          }}
-        >
-          Start Game
-        </Button>
+        <>
+          <FormControl>
+            <FormLabel> Who should give the first prompt? </FormLabel>
+            <RadioGroup
+              row
+              value={firstPlayer}
+              onChange={(e) => setFirstPlayer(e.target.value as 'Me' | 'Opponent' | 'Random')}
+            >
+              <FormControlLabel value='Me' control={<Radio />} label='Me' />
+              <FormControlLabel value='Opponent' control={<Radio />} label='Opponent' />
+              <FormControlLabel value='Random' control={<Radio />} label='Random' />
+            </RadioGroup>
+          </FormControl>
+
+          <div className='flex-break' />
+
+          <Button
+            variant='contained'
+            color='primary'
+            onClick={() => {
+              const isHostFirst = 
+                firstPlayer === 'Me' ||
+                (firstPlayer === 'Random' && Math.random() < 0.5);
+              connection.invoke('StartGame', isHostFirst)
+                .catch((error) => {
+                  console.error('Error starting game:', error);
+                });
+            }}
+          >
+            Start Game
+          </Button>
+        </>
       )}
     </div>
   );

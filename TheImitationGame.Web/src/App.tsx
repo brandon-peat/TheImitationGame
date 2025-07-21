@@ -25,8 +25,17 @@ function App() {
 
   return (
     <div className='page'>
-      <Typography variant='h3' gutterBottom sx={{ textAlign: 'center' }}>
+      <Typography variant='h3' sx={{ textAlign: 'center' }}>
         The Imitation Game
+      </Typography>
+
+      <Typography gutterBottom variant='body2' sx={{ textAlign: 'center' }}>
+        In this game, you and your opponent will alternate between giving prompts, drawing from those
+        prompts, and trying to tell apart the real drawing from AI fakes.
+        <br />
+        As the prompter, your goal is to tell the difference between the AI fakes and your opponent's drawing.
+        <br />
+        As the drawer, your goal is to create a drawing from the prompt that will be hard to distinguish from the AI fakes.
       </Typography>
 
       <Router>

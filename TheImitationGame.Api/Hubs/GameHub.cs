@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.SignalR;
-using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Text.Json;
 using TheImitationGame.Api.Models;
@@ -50,6 +49,11 @@ namespace TheImitationGame.Api.Hubs
 
             await Groups.AddToGroupAsync(Context.ConnectionId, gameId);
             await Clients.Client(gameId).SendAsync("GameJoined");
+        }
+
+        public async Task StartGame(bool isHostFirst)
+        {
+
         }
 
         public override async Task OnDisconnectedAsync(Exception? exception)

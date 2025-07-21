@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.SignalR;
 using System.Collections.Concurrent;
+using System.Diagnostics;
+using System.Text.Json;
 using TheImitationGame.Api.Models;
 
 namespace TheImitationGame.Api.Hubs
@@ -82,6 +84,44 @@ namespace TheImitationGame.Api.Hubs
                 await Groups.RemoveFromGroupAsync(joiner, host);
                 await Clients.Client(host).SendAsync("JoinerLeft");
             }
+        }
+
+        public async Task<List<string>> GenerateImitations(string prompt, string image_b64, int amount)
+        {
+            var start = new ProcessStartInfo
+            {
+                FileName = "python",
+                Arguments = @"..\TheImitationGame.Image\cli.py",
+                RedirectStandardInput = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            using var process = new Process { StartInfo = start };
+            process.Start();
+
+            var input = new
+            {
+                prompt,
+                image_b64,
+                amount
+            };
+            string jsonInput = JsonSerializer.Serialize(input);
+            await process.StandardInput.WriteAsync(jsonInput);
+            process.StandardInput.Close();
+
+            string output = await process.StandardOutput.ReadToEndAsync();
+            string errors = await process.StandardError.ReadToEndAsync();
+
+            process.WaitForExit();
+
+            if (process.ExitCode != 0)
+                throw new Exception("Python error: " + errors);
+
+            var result = JsonSerializer.Deserialize<List<string>>(output);
+            return result!;
         }
     }
 }

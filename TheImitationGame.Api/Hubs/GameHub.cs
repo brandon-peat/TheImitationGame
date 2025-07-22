@@ -17,7 +17,9 @@ namespace TheImitationGame.Api.Hubs
         public async Task<string> CreateGame()
         {
             string gameId = Context.ConnectionId;
-            if (!Games.TryAdd(gameId, null))
+            var game = new Game(gameId);
+
+            if (!Games.TryAdd(gameId, game))
                 throw new GameHubException(GameHubErrorCode.AlreadyCreatedGame);
 
             await Groups.AddToGroupAsync(Context.ConnectionId, gameId);
@@ -32,19 +34,21 @@ namespace TheImitationGame.Api.Hubs
 
         public async Task JoinGame(string gameId)
         {
-            if (Games.Any(kvp => kvp.Value == Context.ConnectionId))
+            if (Games.Any(kvp => kvp.Value?.JoinerConnectionId == Context.ConnectionId))
                 throw new GameHubException(GameHubErrorCode.AlreadyJoinedGame);
 
-            if (!Games.TryGetValue(gameId, out var joiner))
+            if (!Games.TryGetValue(gameId, out var game))
                 throw new GameHubException(GameHubErrorCode.GameNotFound);
 
             if (gameId == Context.ConnectionId)
                 throw new GameHubException(GameHubErrorCode.CannotJoinOwnGame);
 
-            if (joiner != null)
+            if (game!.JoinerConnectionId != null)
                 throw new GameHubException(GameHubErrorCode.GameFull);
 
-            if (!Games.TryUpdate(gameId, Context.ConnectionId, null))
+            var joinedGame = new Game(game.HostConnectionId, Context.ConnectionId, true);
+
+            if (!Games.TryUpdate(gameId, joinedGame, game))
                 throw new GameHubException(GameHubErrorCode.UnknownError);
 
             await Groups.AddToGroupAsync(Context.ConnectionId, gameId);
@@ -66,8 +70,9 @@ namespace TheImitationGame.Api.Hubs
 
         async Task CloseGameWithHost(string host)
         {
-            if (Games.TryRemove(host, out string? joiner))
+            if (Games.TryRemove(host, out Game? game))
             {
+                var joiner = game?.JoinerConnectionId;
                 await Groups.RemoveFromGroupAsync(host, host);
                 if (joiner != null)
                 {
@@ -79,8 +84,8 @@ namespace TheImitationGame.Api.Hubs
 
         async Task CloseGameWithJoiner(string joiner)
         {
-            var joinedGame = Games.FirstOrDefault(kvp => kvp.Value == joiner);
-            if (!joinedGame.Equals(default(KeyValuePair<string, string?>)))
+            var joinedGame = Games.FirstOrDefault(kvp => kvp.Value?.JoinerConnectionId == joiner);
+            if (!joinedGame.Equals(default(KeyValuePair<string, Game>)))
             {
                 string host = joinedGame.Key;
                 Games.TryRemove(host, out _);
@@ -90,7 +95,7 @@ namespace TheImitationGame.Api.Hubs
             }
         }
 
-        public async Task<List<string>> GenerateImitations(string prompt, string image_b64, int amount)
+        private async Task<List<string>> GenerateImitations(string prompt, string image_b64, int amount)
         {
             var start = new ProcessStartInfo
             {

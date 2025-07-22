@@ -33,7 +33,7 @@ namespace TheImitationGame.Tests
         public async Task CreateGame_WhenCalled_AddsGameAndAddsCallerToGroupWithCorrectId()
         {
             // Arrange
-            mockGamesStore.Setup(games => games.TryAdd(connectionId, null)).Returns(true);
+            mockGamesStore.Setup(games => games.TryAdd(connectionId, It.IsAny<Game>())).Returns(true);
 
             // Act
             var result = await hub.CreateGame();
@@ -50,7 +50,7 @@ namespace TheImitationGame.Tests
         public async Task CreateGame_WhenGameAlreadyExists_ThrowsGameHubExceptionWithCorrectErrorCode()
         {
             // Arrange
-            mockGamesStore.Setup(games => games.TryAdd(connectionId, null)).Returns(false);
+            mockGamesStore.Setup(games => games.TryAdd(connectionId, It.IsAny<Game>())).Returns(false);
 
             // Act
             async Task<string> act() => await hub.CreateGame();
@@ -65,7 +65,7 @@ namespace TheImitationGame.Tests
         {
             // Arrange
             mockGamesStore
-                .Setup(games => games.TryRemove(connectionId, out It.Ref<string?>.IsAny))
+                .Setup(games => games.TryRemove(connectionId, out It.Ref<Game?>.IsAny))
                 .Returns((string key, out string? value) => {
                     value = null;
                     return true;
@@ -76,7 +76,7 @@ namespace TheImitationGame.Tests
 
             // Assert
             mockGamesStore.Verify(
-                store => store.TryRemove(connectionId, out It.Ref<string?>.IsAny),
+                store => store.TryRemove(connectionId, out It.Ref<Game?>.IsAny),
                 Times.Once
             );
             mockGroups.Verify(
@@ -92,10 +92,10 @@ namespace TheImitationGame.Tests
             var mockJoinerClient = new Mock<ISingleClientProxy>();
 
             mockGamesStore
-                .Setup(games => games.TryRemove(connectionId, out It.Ref<string?>.IsAny))
-                .Returns((string key, out string? value) =>
+                .Setup(games => games.TryRemove(connectionId, out It.Ref<Game?>.IsAny))
+                .Returns((string key, out Game? game) =>
                 {
-                    value = joinerConnectionId;
+                    game = new Game(hostConnectionId, joinerConnectionId);
                     return true;
                 });
             mockClients
@@ -127,8 +127,11 @@ namespace TheImitationGame.Tests
             var mockHostClient = new Mock<ISingleClientProxy>();
 
             mockGamesStore
-                .Setup(games => games.FirstOrDefault(It.IsAny<Func<KeyValuePair<string, string?>, bool>>()))
-                .Returns(new KeyValuePair<string, string?>(hostConnectionId, connectionId));
+                .Setup(games => games.FirstOrDefault(It.IsAny<Func<KeyValuePair<string, Game>, bool>>()))
+                .Returns(new KeyValuePair<string, Game>(
+                    hostConnectionId,
+                    new Game(hostConnectionId, connectionId)
+                ));
             mockClients
                 .Setup(clients => clients.Client(hostConnectionId))
                 .Returns(mockHostClient.Object);
@@ -138,7 +141,7 @@ namespace TheImitationGame.Tests
 
             //Assert
             mockGamesStore.Verify(
-                store => store.TryRemove(hostConnectionId, out It.Ref<string?>.IsAny),
+                store => store.TryRemove(hostConnectionId, out It.Ref<Game?>.IsAny),
                 Times.Once
             );
             mockGroups.Verify(
@@ -164,11 +167,11 @@ namespace TheImitationGame.Tests
         {
             // Arrange
             mockGamesStore
-                .Setup(games => games.TryRemove(connectionId, out It.Ref<string?>.IsAny))
+                .Setup(games => games.TryRemove(connectionId, out It.Ref<Game?>.IsAny))
                 .Returns(false);
             mockGamesStore
-                .Setup(games => games.FirstOrDefault(It.IsAny<Func<KeyValuePair<string, string?>, bool>>()))
-                .Returns(default(KeyValuePair<string, string?>));
+                .Setup(games => games.FirstOrDefault(It.IsAny<Func<KeyValuePair<string, Game>, bool>>()))
+                .Returns(default(KeyValuePair<string, Game>));
 
             // Act
             var exception = await Record.ExceptionAsync(() => hub.LeaveGame());
@@ -176,7 +179,7 @@ namespace TheImitationGame.Tests
             // Assert
             Assert.Null(exception);
             mockGamesStore.Verify(
-                store => store.TryRemove(connectionId, out It.Ref<string?>.IsAny),
+                store => store.TryRemove(connectionId, out It.Ref<Game?>.IsAny),
                 Times.Once
             );
             mockGroups.VerifyNoOtherCalls();
@@ -190,14 +193,14 @@ namespace TheImitationGame.Tests
             var mockHostClient = new Mock<ISingleClientProxy>();
 
             mockGamesStore
-                .Setup(games => games.TryGetValue(hostConnectionId, out It.Ref<string?>.IsAny))
-                .Returns((string key, out string? joiner) =>
+                .Setup(games => games.TryGetValue(hostConnectionId, out It.Ref<Game?>.IsAny))
+                .Returns((string key, out Game? game) =>
                 {
-                    joiner = null;
+                    game = new Game(hostConnectionId);
                     return true;
                 });
             mockGamesStore
-                .Setup(games => games.TryUpdate(hostConnectionId, connectionId, null))
+                .Setup(games => games.TryUpdate(hostConnectionId, It.IsAny<Game>(), It.IsAny<Game>()))
                 .Returns(true);
             mockClients
                 .Setup(clients => clients.Client(hostConnectionId))
@@ -208,7 +211,7 @@ namespace TheImitationGame.Tests
 
             // Assert
             mockGamesStore.Verify(
-                store => store.TryUpdate(hostConnectionId, connectionId, null),
+                store => store.TryUpdate(hostConnectionId, It.IsAny<Game>(), It.IsAny<Game>()),
                 Times.Once
             );
             mockGroups.Verify(
@@ -230,7 +233,7 @@ namespace TheImitationGame.Tests
         {
             // Arrange
             mockGamesStore
-                .Setup(games => games.Any(It.IsAny<Func<KeyValuePair<string, string?>, bool>>()))
+                .Setup(games => games.Any(It.IsAny<Func<KeyValuePair<string, Game>, bool>>()))
                 .Returns(true);
 
             // Act
@@ -246,7 +249,7 @@ namespace TheImitationGame.Tests
         {
             // Arrange
             mockGamesStore
-                .Setup(games => games.TryGetValue(hostConnectionId, out It.Ref<string?>.IsAny))
+                .Setup(games => games.TryGetValue(hostConnectionId, out It.Ref<Game?>.IsAny))
                 .Returns(false);
 
             // Act
@@ -262,7 +265,7 @@ namespace TheImitationGame.Tests
         {
             // Arrange
             mockGamesStore
-                .Setup(games => games.TryGetValue(connectionId, out It.Ref<string?>.IsAny))
+                .Setup(games => games.TryGetValue(connectionId, out It.Ref<Game?>.IsAny))
                 .Returns((string key, out string? joiner) =>
                 {
                     joiner = null;
@@ -282,10 +285,10 @@ namespace TheImitationGame.Tests
         {
             // Arrange
             mockGamesStore
-                .Setup(games => games.TryGetValue(hostConnectionId, out It.Ref<string?>.IsAny))
-                .Returns((string key, out string? joiner) =>
+                .Setup(games => games.TryGetValue(hostConnectionId, out It.Ref<Game?>.IsAny))
+                .Returns((string key, out Game? game) =>
                 {
-                    joiner = joinerConnectionId;
+                    game = new Game(hostConnectionId, joinerConnectionId);
                     return true;
                 });
 

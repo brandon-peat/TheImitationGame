@@ -1,4 +1,5 @@
 using TheImitationGame.Api.Hubs;
+using TheImitationGame.Api.Stores;
 
 var builder = WebApplication.CreateBuilder(args);
 

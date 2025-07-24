@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.SignalR;
+using Microsoft.Extensions.Hosting;
 using System.Diagnostics;
 using System.Text.Json;
 using TheImitationGame.Api.Models;
@@ -46,7 +47,7 @@ namespace TheImitationGame.Api.Hubs
             if (game!.JoinerConnectionId != null)
                 throw new GameHubException(GameHubErrorCode.GameFull);
 
-            var joinedGame = new Game(game.HostConnectionId, Context.ConnectionId, true);
+            var joinedGame = new Game(game.HostConnectionId, Context.ConnectionId);
 
             if (!Games.TryUpdate(gameId, joinedGame, game))
                 throw new GameHubException(GameHubErrorCode.UnknownError);
@@ -57,7 +58,33 @@ namespace TheImitationGame.Api.Hubs
 
         public async Task StartGame(bool isHostFirst)
         {
+            // TODO: get this from an LLM
+            const string defaultPrompt = "A cat exploding";
 
+            var game = GetGameByHost(Context.ConnectionId)
+                ?? throw new HubException("TODO: not hosting a game error");
+
+            if (game.JoinerConnectionId == null)
+                throw new HubException("TODO: no joiner error");
+
+            if (game.State != GameState.NotStarted)
+                throw new HubException("TODO: already started error");
+
+            var startedGame = new Game(game.HostConnectionId, game.JoinerConnectionId, GameState.Prompting);
+
+            if (!Games.TryUpdate(game.HostConnectionId, startedGame, game))
+                throw new GameHubException(GameHubErrorCode.UnknownError);
+
+            var prompter = isHostFirst ? game.HostConnectionId : game.JoinerConnectionId;
+            var drawer = isHostFirst ? game.JoinerConnectionId : game.HostConnectionId;
+
+            await Clients.Client(prompter!).SendAsync("PromptTimerStarted", defaultPrompt);
+            await Clients.Client(drawer!).SendAsync("AwaitPrompt", defaultPrompt);
+        }
+
+        public async Task SubmitPrompt(string prompt)
+        {
+            
         }
 
         public override async Task OnDisconnectedAsync(Exception? exception)
@@ -95,7 +122,32 @@ namespace TheImitationGame.Api.Hubs
             }
         }
 
-        private async Task<List<string>> GenerateImitations(string prompt, string image_b64, int amount)
+        Game? GetGameByHost(string hostId)
+        {
+            Games.TryGetValue(hostId, out Game? game);
+            return game;
+        }
+
+        Game? GetGameByJoiner(string joinerId)
+        {
+            if (joinerId == null)
+                return null;
+
+            var game = Games.FirstOrDefault(kvp => kvp.Value?.JoinerConnectionId == joinerId);
+
+            if (game.Equals(default(KeyValuePair<string, Game>)))
+                return null;
+
+            return game.Value;
+        }
+
+        Game? GetGameByMember(string connectionId)
+        {
+            var game = GetGameByHost(connectionId) ?? GetGameByJoiner(connectionId);
+            return game;
+        }
+
+        async Task<List<string>> GenerateImitations(string prompt, string image_b64, int amount)
         {
             var start = new ProcessStartInfo
             {

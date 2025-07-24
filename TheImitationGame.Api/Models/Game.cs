@@ -1,16 +1,24 @@
 ﻿namespace TheImitationGame.Api.Models
 {
+    public enum GameState
+    {
+        NotStarted,
+        Prompting,
+        Drawing,
+        Guessing
+    }
+
     public class Game
     {
         public string HostConnectionId { get; set; }
         public string? JoinerConnectionId { get; set; }
-        public bool HasStarted { get; set; }
+        public GameState State { get; set; }
 
-        public Game(string hostConnectionId, string? joinerConnectionId = null, bool hasStarted = false)
+        public Game(string hostConnectionId, string? joinerConnectionId = null, GameState state = GameState.NotStarted)
         {
             HostConnectionId = hostConnectionId;
             JoinerConnectionId = joinerConnectionId;
-            HasStarted = hasStarted;
+            State = state;
         }
     }
 }

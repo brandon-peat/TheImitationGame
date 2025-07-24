@@ -327,5 +327,109 @@ namespace TheImitationGame.Tests
             var ex = await Assert.ThrowsAsync<GameHubException>(act);
             Assert.Contains(GameHubErrorCode.GameNotFound.ToString(), ex.Message);
         }
+
+        [Fact]
+        public async Task StartGame_WithValidJoinedGameAndHostFirst_SetsGameStateToPromptingAndNotifiesPlayers()
+        {
+            // Arrange
+            var game = new Game(connectionId, joinerConnectionId);
+            Game? updatedGame = null;
+
+            mockGamesStore
+                .Setup(games => games.TryGetValue(connectionId, out It.Ref<Game?>.IsAny))
+                .Returns((string key, out Game? g) =>
+                {
+                    g = game;
+                    return true;
+                });
+            mockGamesStore
+                .Setup(games => games.TryUpdate(connectionId, It.IsAny<Game>(), It.IsAny<Game>()))
+                .Callback((string key, Game newValue, Game _) => updatedGame = newValue)
+                .Returns(true);
+
+            var mockHostClient = new Mock<ISingleClientProxy>();
+            var mockJoinerClient = new Mock<ISingleClientProxy>();
+            mockClients
+                .Setup(clients => clients.Client(connectionId))
+                .Returns(mockHostClient.Object);
+            mockClients
+                .Setup(clients => clients.Client(joinerConnectionId))
+                .Returns(mockJoinerClient.Object);
+
+            // Act
+            await hub.StartGame(true);
+
+            // Assert
+            Assert.NotNull(updatedGame);
+            Assert.Equal(GameState.Prompting, updatedGame.State);
+            mockClients.Verify(
+                clients => clients.Client(connectionId).SendCoreAsync(
+                    "PromptTimerStarted",
+                    It.Is<object?[]>(args => args.Length == 1),
+                    default
+                ),
+                Times.Once
+            );
+            mockClients.Verify(
+                clients => clients.Client(joinerConnectionId).SendCoreAsync(
+                    "AwaitPrompt",
+                    It.Is<object?[]>(args => args.Length == 1),
+                    default
+                ),
+                Times.Once
+            );
+        }
+
+        [Fact]
+        public async Task StartGame_WithValidJoinedGameAndJoinerFirst_SetsGameStateToPromptingAndNotifiesPlayers()
+        {
+            // Arrange
+            var game = new Game(connectionId, joinerConnectionId);
+            Game? updatedGame = null;
+
+            mockGamesStore
+                .Setup(games => games.TryGetValue(connectionId, out It.Ref<Game?>.IsAny))
+                .Returns((string key, out Game? g) =>
+                {
+                    g = game;
+                    return true;
+                });
+            mockGamesStore
+                .Setup(games => games.TryUpdate(connectionId, It.IsAny<Game>(), It.IsAny<Game>()))
+                .Callback((string key, Game newValue, Game _) => updatedGame = newValue)
+                .Returns(true);
+
+            var mockHostClient = new Mock<ISingleClientProxy>();
+            var mockJoinerClient = new Mock<ISingleClientProxy>();
+            mockClients
+                .Setup(clients => clients.Client(connectionId))
+                .Returns(mockHostClient.Object);
+            mockClients
+                .Setup(clients => clients.Client(joinerConnectionId))
+                .Returns(mockJoinerClient.Object);
+
+            // Act
+            await hub.StartGame(false);
+
+            // Assert
+            Assert.NotNull(updatedGame);
+            Assert.Equal(GameState.Prompting, updatedGame.State);
+            mockClients.Verify(
+                clients => clients.Client(connectionId).SendCoreAsync(
+                    "AwaitPrompt",
+                    It.Is<object?[]>(args => args.Length == 1),
+                    default
+                ),
+                Times.Once
+            );
+            mockClients.Verify(
+                clients => clients.Client(joinerConnectionId).SendCoreAsync(
+                    "PromptTimerStarted",
+                    It.Is<object?[]>(args => args.Length == 1),
+                    default
+                ),
+                Times.Once
+            );
+        }
     }
 }

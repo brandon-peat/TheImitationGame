@@ -4,7 +4,7 @@ import FormControlLabel from '@mui/material/FormControlLabel';
 import FormLabel from '@mui/material/FormLabel';
 import Radio from '@mui/material/Radio';
 import RadioGroup from '@mui/material/RadioGroup';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import connection from '../signalr-connection';
 
@@ -13,6 +13,7 @@ function Host({connectionReady}: {connectionReady: boolean}) {
   const [gameJoined, setGameJoined] = useState<boolean>(false);
   const [firstPlayer, setFirstPlayer] = useState<'Me' | 'Opponent' | 'Random'>('Me');
 
+  const navigatingInternally = useRef(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -37,13 +38,30 @@ function Host({connectionReady}: {connectionReady: boolean}) {
     };
     connection.on('JoinerLeft', handleJoinerLeft);
 
+    function handleGameStartedAsPrompter(defaultPrompt: string) {
+      navigatingInternally.current = true;
+      navigate('/prompt', { state: { defaultPrompt } });
+    }
+    connection.on('PromptTimerStarted', handleGameStartedAsPrompter);
+
+    const handleGameStartedAsDrawer = () => {
+      navigatingInternally.current = true;
+      navigate('/draw');
+    }
+    connection.on('AwaitPrompt', handleGameStartedAsDrawer);
+
     return () => {
       connection.off('GameJoined', handleGameJoined);
-      
-      connection.invoke('LeaveGame')
-        .catch((error) => {
-          console.error('Error leaving game:', error);
-        });
+      connection.off('JoinerLeft', handleJoinerLeft);
+      connection.off('PromptTimerStarted', handleGameStartedAsPrompter);
+      connection.off('AwaitPrompt', handleGameStartedAsDrawer);
+
+      if (!navigatingInternally.current) {
+        connection.invoke('LeaveGame')
+          .catch((error) => {
+            console.error('Error leaving game:', error);
+          });
+        }
     }
   }, [connectionReady]);
 

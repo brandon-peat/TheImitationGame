@@ -13,6 +13,11 @@
             GameHubErrorCode.GameFull => "Game has already been joined.",
             GameHubErrorCode.GameNotFound => "Game was not found.",
 
+            // StartGame errors
+            GameHubErrorCode.NoGameToStart => "You are not hosting a game.",
+            GameHubErrorCode.NoJoinerInGame => "Someone has to join your game before it can be started.",
+            GameHubErrorCode.AlreadyStartedGame => "Your game has already been started.",
+
             GameHubErrorCode.UnknownError => "An unknown error occurred.",
             _ => "An unknown error occurred."
         };

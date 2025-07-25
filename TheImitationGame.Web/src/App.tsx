@@ -5,6 +5,7 @@ import './App.css';
 import Home from './Home/Home';
 import Host from './Host/Host';
 import Join from './Join/Join';
+import Prompt from './Prompt/Prompt';
 import connection from './signalr-connection';
 
 
@@ -43,6 +44,7 @@ function App() {
           <Route path = '/' element={<Home />} />
           <Route path = '/host' element={<Host connectionReady={connectionReady} />} />
           <Route path = '/join' element={<Join connectionReady={connectionReady} />} />
+          <Route path = '/prompt' element={<Prompt connectionReady={connectionReady} />} />
         </Routes>
       </Router>
     </div>

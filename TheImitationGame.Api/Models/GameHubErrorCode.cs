@@ -11,6 +11,11 @@
         GameFull,
         GameNotFound,
 
+        // StartGame errors
+        NoGameToStart,
+        NoJoinerInGame,
+        AlreadyStartedGame,
+
         UnknownError
     }
 }

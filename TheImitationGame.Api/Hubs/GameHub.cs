@@ -62,13 +62,13 @@ namespace TheImitationGame.Api.Hubs
             const string defaultPrompt = "A cat exploding";
 
             var game = GetGameByHost(Context.ConnectionId)
-                ?? throw new HubException("TODO: not hosting a game error");
+                ?? throw new GameHubException(GameHubErrorCode.NoGameToStart);
 
             if (game.JoinerConnectionId == null)
-                throw new HubException("TODO: no joiner error");
+                throw new GameHubException(GameHubErrorCode.NoJoinerInGame);
 
             if (game.State != GameState.NotStarted)
-                throw new HubException("TODO: already started error");
+                throw new GameHubException(GameHubErrorCode.AlreadyStartedGame);
 
             var startedGame = new Game(game.HostConnectionId, game.JoinerConnectionId, GameState.Prompting);
 
@@ -79,7 +79,7 @@ namespace TheImitationGame.Api.Hubs
             var drawer = isHostFirst ? game.JoinerConnectionId : game.HostConnectionId;
 
             await Clients.Client(prompter!).SendAsync("PromptTimerStarted", defaultPrompt);
-            await Clients.Client(drawer!).SendAsync("AwaitPrompt", defaultPrompt);
+            await Clients.Client(drawer!).SendAsync("AwaitPrompt");
         }
 
         public async Task SubmitPrompt(string prompt)

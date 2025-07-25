@@ -373,7 +373,7 @@ namespace TheImitationGame.Tests
             mockClients.Verify(
                 clients => clients.Client(joinerConnectionId).SendCoreAsync(
                     "AwaitPrompt",
-                    It.Is<object?[]>(args => args.Length == 1),
+                    It.Is<object?[]>(args => args.Length == 0),
                     default
                 ),
                 Times.Once
@@ -417,7 +417,7 @@ namespace TheImitationGame.Tests
             mockClients.Verify(
                 clients => clients.Client(connectionId).SendCoreAsync(
                     "AwaitPrompt",
-                    It.Is<object?[]>(args => args.Length == 1),
+                    It.Is<object?[]>(args => args.Length == 0),
                     default
                 ),
                 Times.Once
@@ -430,6 +430,70 @@ namespace TheImitationGame.Tests
                 ),
                 Times.Once
             );
+        }
+
+        [Fact]
+        public async Task StartGame_WithNoHostedGame_ThrowsNoGameToStartException()
+        {
+            // Arrange
+            mockGamesStore
+                .Setup(games => games.TryGetValue(connectionId, out It.Ref<Game?>.IsAny))
+                .Returns((string key, out Game? g) =>
+                {
+                    g = null;
+                    return false;
+                });
+
+            // Act
+            async Task act() => await hub.StartGame(false);
+
+            // Assert
+            var ex = await Assert.ThrowsAsync<GameHubException>(act);
+            Assert.Contains(GameHubErrorCode.NoGameToStart.ToString(), ex.Message);
+        }
+
+        [Fact]
+        public async Task StartGame_WithNoJoiner_ThrowsNoGameToStartException()
+        {
+            // Arrange
+            var game = new Game(connectionId);
+
+            mockGamesStore
+                .Setup(games => games.TryGetValue(connectionId, out It.Ref<Game?>.IsAny))
+                .Returns((string key, out Game? g) =>
+                {
+                    g = game;
+                    return true;
+                });
+
+            // Act
+            async Task act() => await hub.StartGame(false);
+
+            // Assert
+            var ex = await Assert.ThrowsAsync<GameHubException>(act);
+            Assert.Contains(GameHubErrorCode.NoJoinerInGame.ToString(), ex.Message);
+        }
+
+        [Fact]
+        public async Task StartGame_WithAlreadyStartedGame_ThrowsNoGameToStartException()
+        {
+            // Arrange
+            var game = new Game(connectionId, joinerConnectionId, GameState.Prompting);
+
+            mockGamesStore
+                .Setup(games => games.TryGetValue(connectionId, out It.Ref<Game?>.IsAny))
+                .Returns((string key, out Game? g) =>
+                {
+                    g = game;
+                    return true;
+                });
+
+            // Act
+            async Task act() => await hub.StartGame(false);
+
+            // Assert
+            var ex = await Assert.ThrowsAsync<GameHubException>(act);
+            Assert.Contains(GameHubErrorCode.AlreadyStartedGame.ToString(), ex.Message);
         }
     }
 }

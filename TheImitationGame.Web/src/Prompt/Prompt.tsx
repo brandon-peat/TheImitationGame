@@ -1,7 +1,7 @@
-import { TextField } from "@mui/material";
-import { useEffect } from "react";
+import { TextField } from '@mui/material';
+import { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import connection from "../signalr-connection";
+import connection from '../signalr-connection';
 
 function Prompt({connectionReady}: {connectionReady: boolean}) {
   const navigate = useNavigate();
@@ -27,8 +27,15 @@ function Prompt({connectionReady}: {connectionReady: boolean}) {
       onKeyDown={(e) => {
         if (e.key === 'Enter') {
           let input = e.target as HTMLInputElement;
-          // TODO: send it to the hub
-          input.value = '';
+          let prompt = input.value.trim();
+          if (!prompt) return;
+          connection.invoke('SubmitPrompt', prompt)
+            .then(() => {
+              input.value = '';
+            })
+            .catch((error) => {
+              console.error('Error submitting prompt:', error);
+            });
         }
       }}
     />

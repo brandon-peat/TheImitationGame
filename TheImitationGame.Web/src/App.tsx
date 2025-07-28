@@ -2,6 +2,7 @@ import Typography from '@mui/material/Typography';
 import { useEffect, useState } from 'react';
 import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';
 import './App.css';
+import Draw from './Draw/Draw';
 import Home from './Home/Home';
 import Host from './Host/Host';
 import Join from './Join/Join';
@@ -45,6 +46,7 @@ function App() {
           <Route path = '/host' element={<Host connectionReady={connectionReady} />} />
           <Route path = '/join' element={<Join connectionReady={connectionReady} />} />
           <Route path = '/prompt' element={<Prompt connectionReady={connectionReady} />} />
+          <Route path = '/draw' element={<Draw connectionReady={connectionReady} />} />
         </Routes>
       </Router>
     </div>

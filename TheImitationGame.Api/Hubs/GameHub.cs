@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.SignalR;
-using Microsoft.Extensions.Hosting;
 using System.Diagnostics;
 using System.Text.Json;
 using TheImitationGame.Api.Models;
@@ -58,9 +57,6 @@ namespace TheImitationGame.Api.Hubs
 
         public async Task StartGame(bool isHostFirst)
         {
-            // TODO: get this from an LLM
-            const string defaultPrompt = "A cat exploding";
-
             var game = GetGameByHost(Context.ConnectionId)
                 ?? throw new GameHubException(GameHubErrorCode.NoGameToStart);
 
@@ -70,7 +66,10 @@ namespace TheImitationGame.Api.Hubs
             if (game.State != GameState.NotStarted)
                 throw new GameHubException(GameHubErrorCode.AlreadyStartedGame);
 
-            var startedGame = new Game(game.HostConnectionId, game.JoinerConnectionId, GameState.Prompting);
+            // TODO: get this from an LLM
+            const string defaultPrompt = "A cat exploding";
+
+            var startedGame = new Game(game.HostConnectionId, game.JoinerConnectionId, GameState.Prompting, defaultPrompt);
 
             if (!Games.TryUpdate(game.HostConnectionId, startedGame, game))
                 throw new GameHubException(GameHubErrorCode.UnknownError);

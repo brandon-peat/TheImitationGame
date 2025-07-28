@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.SignalR;
 using System.Diagnostics;
 using System.Text.Json;
+using TheImitationGame.Api.Interfaces;
 using TheImitationGame.Api.Models;
 
 namespace TheImitationGame.Api.Hubs
@@ -49,8 +50,7 @@ namespace TheImitationGame.Api.Hubs
             if (game!.JoinerConnectionId != null)
                 throw new GameHubException(GameHubErrorCode.GameFull);
 
-            var joinedGame = new Game(game.HostConnectionId, Context.ConnectionId);
-
+            var joinedGame = game.With(joinerConnectionId: Context.ConnectionId);
             if (!Games.TryUpdate(gameId, joinedGame, game))
                 throw new GameHubException(GameHubErrorCode.UnknownError);
 
@@ -72,8 +72,11 @@ namespace TheImitationGame.Api.Hubs
             // TODO: get this from an LLM
             const string defaultPrompt = "A cat exploding";
 
-            var startedGame = new Game(game.HostConnectionId, game.JoinerConnectionId, GameState.Prompting, defaultPrompt);
-
+            var startedGame = game.With(
+                state: GameState.Prompting,
+                prompt: defaultPrompt,
+                prompter: isHostFirst ? Role.Host : Role.Joiner
+            );
             if (!Games.TryUpdate(game.HostConnectionId, startedGame, game))
                 throw new GameHubException(GameHubErrorCode.UnknownError);
 

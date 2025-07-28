@@ -2,6 +2,7 @@ using Moq;
 using Microsoft.AspNetCore.SignalR;
 using TheImitationGame.Api.Hubs;
 using TheImitationGame.Api.Models;
+using TheImitationGame.Api.Interfaces;
 
 namespace TheImitationGame.Tests
 {

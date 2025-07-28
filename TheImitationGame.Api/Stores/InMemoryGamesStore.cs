@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using TheImitationGame.Api.Interfaces;
 using TheImitationGame.Api.Models;
 
 namespace TheImitationGame.Api.Stores

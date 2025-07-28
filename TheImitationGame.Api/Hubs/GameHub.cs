@@ -16,6 +16,9 @@ namespace TheImitationGame.Api.Hubs
 
         public async Task<string> CreateGame()
         {
+            if(GetGameByJoiner(Context.ConnectionId) != null)
+                throw new GameHubException(GameHubErrorCode.CannotHostWhileJoined);
+
             string gameId = Context.ConnectionId;
             var game = new Game(gameId);
 

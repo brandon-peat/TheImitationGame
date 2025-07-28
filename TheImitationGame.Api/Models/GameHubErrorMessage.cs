@@ -6,6 +6,7 @@
         {
             // CreateGame errors
             GameHubErrorCode.AlreadyCreatedGame => "You have already created a game which has not ended.",
+            GameHubErrorCode.CannotHostWhileJoined => "You cannot host a game when you have already joined someone else's game.",
 
             // JoinGame errors
             GameHubErrorCode.AlreadyJoinedGame => "You are already in a game.",

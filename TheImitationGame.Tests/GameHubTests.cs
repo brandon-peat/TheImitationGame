@@ -47,7 +47,7 @@ namespace TheImitationGame.Tests
         }
 
         [Fact]
-        public async Task CreateGame_WhenGameAlreadyExists_ThrowsGameHubExceptionWithCorrectErrorCode()
+        public async Task CreateGame_WhenGameAlreadyExists_ThrowsWithAlreadyCreatedGameError()
         {
             // Arrange
             mockGamesStore.Setup(games => games.TryAdd(connectionId, It.IsAny<Game>())).Returns(false);
@@ -58,6 +58,25 @@ namespace TheImitationGame.Tests
             // Assert
             var ex = await Assert.ThrowsAsync<GameHubException>(act);
             Assert.Contains(GameHubErrorCode.AlreadyCreatedGame.ToString(), ex.Message);
+        }
+
+        [Fact]
+        public async Task CreateGame_HavingJoinedOtherGame_ThrowsWithCannotHostWhileJoinedError()
+        {
+            // Arrange
+            mockGamesStore
+                .Setup(games => games.FirstOrDefault(It.IsAny<Func<KeyValuePair<string, Game>, bool>>()))
+                .Returns(new KeyValuePair<string, Game>(
+                    hostConnectionId,
+                    new Game(hostConnectionId, connectionId)
+                ));
+
+            // Act
+            async Task<string> act() => await hub.CreateGame();
+
+            // Assert
+            var ex = await Assert.ThrowsAsync<GameHubException>(act);
+            Assert.Contains(GameHubErrorCode.CannotHostWhileJoined.ToString(), ex.Message);
         }
 
         [Fact]
@@ -229,7 +248,7 @@ namespace TheImitationGame.Tests
         }
 
         [Fact]
-        public async Task JoinGame_WhenAlreadyInGame_ThrowsGameHubExceptionWithAlreadyJoinedGameError()
+        public async Task JoinGame_WhenAlreadyInGame_ThrowsWithAlreadyJoinedGameError()
         {
             // Arrange
             mockGamesStore
@@ -245,7 +264,7 @@ namespace TheImitationGame.Tests
         }
 
         [Fact]
-        public async Task JoinGame_WithInvalidGameCode_ThrowsGameHubExceptionWithGameNotFoundError()
+        public async Task JoinGame_WithInvalidGameCode_ThrowsWithGameNotFoundError()
         {
             // Arrange
             mockGamesStore
@@ -261,7 +280,7 @@ namespace TheImitationGame.Tests
         }
 
         [Fact]
-        public async Task JoinGame_WithOwnGameCode_ThrowsGameHubExceptionWithCannotJoinOwnGameError()
+        public async Task JoinGame_WithOwnGameCode_ThrowsWithCannotJoinOwnGameError()
         {
             // Arrange
             mockGamesStore
@@ -281,7 +300,7 @@ namespace TheImitationGame.Tests
         }
 
         [Fact]
-        public async Task JoinGame_WhenGameIsFull_ThrowsGameHubExceptionWithGameFullError()
+        public async Task JoinGame_WhenGameIsFull_ThrowsWithGameFullError()
         {
             // Arrange
             mockGamesStore
@@ -301,7 +320,7 @@ namespace TheImitationGame.Tests
         }
 
         [Fact]
-        public async Task JoinGame_WithNullGameId_ThrowsGameNotFoundException()
+        public async Task JoinGame_WithNullGameId_ThrowsWithGameNotFoundError()
         {
             // Arrange
             string? gameId = null;
@@ -315,7 +334,7 @@ namespace TheImitationGame.Tests
         }
 
         [Fact]
-        public async Task JoinGame_WithEmptyGameId_ThrowsGameNotFoundException()
+        public async Task JoinGame_WithEmptyGameId_ThrowsWithGameNotFoundError()
         {
             // Arrange
             string? gameId = "";
@@ -433,7 +452,7 @@ namespace TheImitationGame.Tests
         }
 
         [Fact]
-        public async Task StartGame_WithNoHostedGame_ThrowsNoGameToStartException()
+        public async Task StartGame_WithNoHostedGame_ThrowsWithNoGameToStartError()
         {
             // Arrange
             mockGamesStore
@@ -453,7 +472,7 @@ namespace TheImitationGame.Tests
         }
 
         [Fact]
-        public async Task StartGame_WithNoJoiner_ThrowsNoGameToStartException()
+        public async Task StartGame_WithNoJoiner_ThrowsWithNoJoinerInGameError()
         {
             // Arrange
             var game = new Game(connectionId);
@@ -475,7 +494,7 @@ namespace TheImitationGame.Tests
         }
 
         [Fact]
-        public async Task StartGame_WithAlreadyStartedGame_ThrowsNoGameToStartException()
+        public async Task StartGame_WithAlreadyStartedGame_ThrowsWithAlreadyStartedGameError()
         {
             // Arrange
             var game = new Game(connectionId, joinerConnectionId, GameState.Prompting);

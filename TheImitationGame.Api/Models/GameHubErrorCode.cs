@@ -4,6 +4,7 @@
     {
         // CreateGame errors
         AlreadyCreatedGame,
+        CannotHostWhileJoined,
 
         // JoinGame errors
         AlreadyJoinedGame,

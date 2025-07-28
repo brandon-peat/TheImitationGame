@@ -58,11 +58,11 @@ namespace TheImitationGame.Tests
 
             // Assert
             var ex = await Assert.ThrowsAsync<GameHubException>(act);
-            Assert.Contains(GameHubErrorCode.AlreadyCreatedGame.ToString(), ex.Message);
+            Assert.Contains(GameHubErrorCode.CreateGame_AlreadyCreatedGame.ToString(), ex.Message);
         }
 
         [Fact]
-        public async Task CreateGame_HavingJoinedOtherGame_ThrowsWithCannotHostWhileJoinedError()
+        public async Task CreateGame_HavingJoinedOtherGame_ThrowsWithAlreadyJoinedGameError()
         {
             // Arrange
             mockGamesStore
@@ -77,7 +77,7 @@ namespace TheImitationGame.Tests
 
             // Assert
             var ex = await Assert.ThrowsAsync<GameHubException>(act);
-            Assert.Contains(GameHubErrorCode.CannotHostWhileJoined.ToString(), ex.Message);
+            Assert.Contains(GameHubErrorCode.CreateGame_AlreadyJoinedGame.ToString(), ex.Message);
         }
 
         [Fact]
@@ -261,7 +261,7 @@ namespace TheImitationGame.Tests
 
             // Assert
             var ex = await Assert.ThrowsAsync<GameHubException>(act);
-            Assert.Contains(GameHubErrorCode.AlreadyJoinedGame.ToString(), ex.Message);
+            Assert.Contains(GameHubErrorCode.JoinGame_AlreadyJoinedGame.ToString(), ex.Message);
         }
 
         [Fact]
@@ -277,7 +277,7 @@ namespace TheImitationGame.Tests
 
             // Assert
             var ex = await Assert.ThrowsAsync<GameHubException>(act);
-            Assert.Contains(GameHubErrorCode.GameNotFound.ToString(), ex.Message);
+            Assert.Contains(GameHubErrorCode.JoinGame_GameNotFound.ToString(), ex.Message);
         }
 
         [Fact]
@@ -297,7 +297,7 @@ namespace TheImitationGame.Tests
 
             // Assert
             var ex = await Assert.ThrowsAsync<GameHubException>(act);
-            Assert.Contains(GameHubErrorCode.CannotJoinOwnGame.ToString(), ex.Message);
+            Assert.Contains(GameHubErrorCode.JoinGame_CannotJoinOwnGame.ToString(), ex.Message);
         }
 
         [Fact]
@@ -317,7 +317,7 @@ namespace TheImitationGame.Tests
 
             // Assert
             var ex = await Assert.ThrowsAsync<GameHubException>(act);
-            Assert.Contains(GameHubErrorCode.GameFull.ToString(), ex.Message);
+            Assert.Contains(GameHubErrorCode.JoinGame_GameFull.ToString(), ex.Message);
         }
 
         [Fact]
@@ -331,7 +331,7 @@ namespace TheImitationGame.Tests
 
             // Assert
             var ex = await Assert.ThrowsAsync<GameHubException>(act);
-            Assert.Contains(GameHubErrorCode.GameNotFound.ToString(), ex.Message);
+            Assert.Contains(GameHubErrorCode.JoinGame_GameNotFound.ToString(), ex.Message);
         }
 
         [Fact]
@@ -345,7 +345,7 @@ namespace TheImitationGame.Tests
 
             // Assert
             var ex = await Assert.ThrowsAsync<GameHubException>(act);
-            Assert.Contains(GameHubErrorCode.GameNotFound.ToString(), ex.Message);
+            Assert.Contains(GameHubErrorCode.JoinGame_GameNotFound.ToString(), ex.Message);
         }
 
         [Fact]
@@ -469,7 +469,7 @@ namespace TheImitationGame.Tests
 
             // Assert
             var ex = await Assert.ThrowsAsync<GameHubException>(act);
-            Assert.Contains(GameHubErrorCode.NoGameToStart.ToString(), ex.Message);
+            Assert.Contains(GameHubErrorCode.StartGame_NoGameToStart.ToString(), ex.Message);
         }
 
         [Fact]
@@ -491,7 +491,7 @@ namespace TheImitationGame.Tests
 
             // Assert
             var ex = await Assert.ThrowsAsync<GameHubException>(act);
-            Assert.Contains(GameHubErrorCode.NoJoinerInGame.ToString(), ex.Message);
+            Assert.Contains(GameHubErrorCode.StartGame_NoJoinerInGame.ToString(), ex.Message);
         }
 
         [Fact]
@@ -513,7 +513,7 @@ namespace TheImitationGame.Tests
 
             // Assert
             var ex = await Assert.ThrowsAsync<GameHubException>(act);
-            Assert.Contains(GameHubErrorCode.AlreadyStartedGame.ToString(), ex.Message);
+            Assert.Contains(GameHubErrorCode.StartGame_AlreadyStartedGame.ToString(), ex.Message);
         }
     }
 }

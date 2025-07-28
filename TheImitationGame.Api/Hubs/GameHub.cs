@@ -18,13 +18,13 @@ namespace TheImitationGame.Api.Hubs
         public async Task<string> CreateGame()
         {
             if(GetGameByJoiner(Context.ConnectionId) != null)
-                throw new GameHubException(GameHubErrorCode.CannotHostWhileJoined);
+                throw new GameHubException(GameHubErrorCode.CreateGame_AlreadyJoinedGame);
 
             string gameId = Context.ConnectionId;
             var game = new Game(gameId);
 
             if (!Games.TryAdd(gameId, game))
-                throw new GameHubException(GameHubErrorCode.AlreadyCreatedGame);
+                throw new GameHubException(GameHubErrorCode.CreateGame_AlreadyCreatedGame);
 
             await Groups.AddToGroupAsync(Context.ConnectionId, gameId);
             return gameId;
@@ -39,16 +39,16 @@ namespace TheImitationGame.Api.Hubs
         public async Task JoinGame(string gameId)
         {
             if (Games.Any(kvp => kvp.Value?.JoinerConnectionId == Context.ConnectionId))
-                throw new GameHubException(GameHubErrorCode.AlreadyJoinedGame);
+                throw new GameHubException(GameHubErrorCode.JoinGame_AlreadyJoinedGame);
 
             if (!Games.TryGetValue(gameId, out var game))
-                throw new GameHubException(GameHubErrorCode.GameNotFound);
+                throw new GameHubException(GameHubErrorCode.JoinGame_GameNotFound);
 
             if (gameId == Context.ConnectionId)
-                throw new GameHubException(GameHubErrorCode.CannotJoinOwnGame);
+                throw new GameHubException(GameHubErrorCode.JoinGame_CannotJoinOwnGame);
 
             if (game!.JoinerConnectionId != null)
-                throw new GameHubException(GameHubErrorCode.GameFull);
+                throw new GameHubException(GameHubErrorCode.JoinGame_GameFull);
 
             var joinedGame = game.With(joinerConnectionId: Context.ConnectionId);
             if (!Games.TryUpdate(gameId, joinedGame, game))
@@ -61,13 +61,13 @@ namespace TheImitationGame.Api.Hubs
         public async Task StartGame(bool isHostFirst)
         {
             var game = GetGameByHost(Context.ConnectionId)
-                ?? throw new GameHubException(GameHubErrorCode.NoGameToStart);
+                ?? throw new GameHubException(GameHubErrorCode.StartGame_NoGameToStart);
 
             if (game.JoinerConnectionId == null)
-                throw new GameHubException(GameHubErrorCode.NoJoinerInGame);
+                throw new GameHubException(GameHubErrorCode.StartGame_NoJoinerInGame);
 
             if (game.State != GameState.NotStarted)
-                throw new GameHubException(GameHubErrorCode.AlreadyStartedGame);
+                throw new GameHubException(GameHubErrorCode.StartGame_AlreadyStartedGame);
 
             // TODO: get this from an LLM
             const string defaultPrompt = "A cat exploding";

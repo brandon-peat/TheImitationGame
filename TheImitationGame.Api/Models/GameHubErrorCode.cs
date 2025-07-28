@@ -2,20 +2,17 @@
 {
     public enum GameHubErrorCode
     {
-        // CreateGame errors
-        AlreadyCreatedGame,
-        CannotHostWhileJoined,
+        CreateGame_AlreadyCreatedGame,
+        CreateGame_AlreadyJoinedGame,
 
-        // JoinGame errors
-        AlreadyJoinedGame,
-        CannotJoinOwnGame,
-        GameFull,
-        GameNotFound,
+        JoinGame_AlreadyJoinedGame,
+        JoinGame_CannotJoinOwnGame,
+        JoinGame_GameFull,
+        JoinGame_GameNotFound,
 
-        // StartGame errors
-        NoGameToStart,
-        NoJoinerInGame,
-        AlreadyStartedGame,
+        StartGame_NoGameToStart,
+        StartGame_NoJoinerInGame,
+        StartGame_AlreadyStartedGame,
 
         UnknownError
     }

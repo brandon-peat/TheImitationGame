@@ -14,6 +14,10 @@
         StartGame_NoJoinerInGame,
         StartGame_AlreadyStartedGame,
 
+        SubmitPrompt_NotInAGame,
+        SubmitPrompt_NotInPromptingPhase,
+        SubmitPrompt_NotPrompter,
+
         UnknownError
     }
 }

@@ -75,8 +75,8 @@ namespace TheImitationGame.Api.Hubs
             var startedGame = game.With(
                 state: GameState.Prompting,
                 prompt: defaultPrompt,
-                prompter: isHostFirst ? Role.Host : Role.Joiner
-            );
+                prompter: isHostFirst ? Role.Host : Role.Joiner);
+
             if (!Games.TryUpdate(game.HostConnectionId, startedGame, game))
                 throw new GameHubException(GameHubErrorCode.UnknownError);
 
@@ -89,7 +89,25 @@ namespace TheImitationGame.Api.Hubs
 
         public async Task SubmitPrompt(string prompt)
         {
-            
+            var game = GetGameByMember(Context.ConnectionId)
+                ?? throw new GameHubException(GameHubErrorCode.SubmitPrompt_NotInAGame);
+
+            if (game.State != GameState.Prompting)
+                throw new GameHubException(GameHubErrorCode.SubmitPrompt_NotInPromptingPhase);
+
+            if (game.Prompter != (Context.ConnectionId == game.HostConnectionId ? Role.Host : Role.Joiner))
+                throw new GameHubException(GameHubErrorCode.SubmitPrompt_NotPrompter);
+
+            var updatedGame = game.With(state: GameState.Drawing, prompt: prompt);
+
+            if (!Games.TryUpdate(game.HostConnectionId, updatedGame, game))
+                throw new GameHubException(GameHubErrorCode.UnknownError);
+
+            var prompter = (game.Prompter == Role.Host) ? game.HostConnectionId : game.JoinerConnectionId;
+            var drawer = (game.Prompter == Role.Host) ? game.JoinerConnectionId : game.HostConnectionId;
+
+            await Clients.Client(prompter!).SendAsync("AwaitDrawings");
+            await Clients.Client(drawer!).SendAsync("DrawTimerStarted", prompt);
         }
 
         public override async Task OnDisconnectedAsync(Exception? exception)

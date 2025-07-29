@@ -18,6 +18,8 @@ namespace TheImitationGame.Tests
         private readonly string hostConnectionId = "host-connection-id";
         private readonly string joinerConnectionId = "joiner-connection-id";
 
+        private readonly string prompt = "A cat not exploding";
+
         public GameHubTests()
         {
             mockContext.Setup(context => context.ConnectionId).Returns(connectionId);
@@ -419,11 +421,11 @@ namespace TheImitationGame.Tests
                 .Callback((string key, Game newValue, Game _) => updatedGame = newValue)
                 .Returns(true);
 
-            var mockHostClient = new Mock<ISingleClientProxy>();
+            var mockClient = new Mock<ISingleClientProxy>();
             var mockJoinerClient = new Mock<ISingleClientProxy>();
             mockClients
                 .Setup(clients => clients.Client(connectionId))
-                .Returns(mockHostClient.Object);
+                .Returns(mockClient.Object);
             mockClients
                 .Setup(clients => clients.Client(joinerConnectionId))
                 .Returns(mockJoinerClient.Object);
@@ -514,6 +516,198 @@ namespace TheImitationGame.Tests
             // Assert
             var ex = await Assert.ThrowsAsync<GameHubException>(act);
             Assert.Contains(GameHubErrorCode.StartGame_AlreadyStartedGame.ToString(), ex.Message);
+        }
+
+        [Fact]
+        public async Task SubmitPrompt_WithHostAsPrompter_SetsGameStateToDrawingAndSetsPromptAndNotifiesPlayers()
+        {
+            // Arrange
+            var game = new Game(
+                hostConnectionId: connectionId,
+                joinerConnectionId: joinerConnectionId,
+                state: GameState.Prompting,
+                prompter: Role.Host);
+            Game? updatedGame = null;
+
+            mockGamesStore
+                .Setup(games => games.TryGetValue(connectionId, out It.Ref<Game?>.IsAny))
+                .Returns((string key, out Game? g) =>
+                {
+                    g = game;
+                    return true;
+                });
+
+            mockGamesStore
+                .Setup(games => games.TryUpdate(connectionId, It.IsAny<Game>(), It.IsAny<Game>()))
+                .Callback((string key, Game newValue, Game _) => updatedGame = newValue)
+                .Returns(true);
+
+            var mockClient = new Mock<ISingleClientProxy>();
+            var mockJoinerClient = new Mock<ISingleClientProxy>();
+            mockClients
+                .Setup(clients => clients.Client(connectionId))
+                .Returns(mockClient.Object);
+            mockClients
+                .Setup(clients => clients.Client(joinerConnectionId))
+                .Returns(mockJoinerClient.Object);
+
+            // Act
+            await hub.SubmitPrompt(prompt);
+
+            // Assert
+            Assert.NotNull(updatedGame);
+            Assert.Equal(GameState.Drawing, updatedGame.State);
+            mockClients.Verify(
+                clients => clients.Client(connectionId).SendCoreAsync(
+                    "AwaitDrawings",
+                    It.Is<object?[]>(args => args.Length == 0),
+                    default
+                ),
+                Times.Once
+            );
+            mockClients.Verify(
+                clients => clients.Client(joinerConnectionId).SendCoreAsync(
+                    "DrawTimerStarted",
+                    It.Is<object?[]>(args => args.Length == 1),
+                    default
+                ),
+                Times.Once
+            );
+        }
+
+        [Fact]
+        public async Task SubmitPrompt_WithJoinerAsPrompter_SetsGameStateToDrawingAndSetsPromptAndNotifiesPlayers()
+        {
+            // Arrange
+            var game = new Game(
+                hostConnectionId: hostConnectionId,
+                joinerConnectionId: connectionId,
+                state: GameState.Prompting,
+                prompter: Role.Joiner);
+            Game? updatedGame = null;
+
+            mockGamesStore
+                .Setup(games => games.TryGetValue(hostConnectionId, out It.Ref<Game?>.IsAny))
+                .Returns((string key, out Game? g) =>
+                {
+                    g = null;
+                    return false;
+                });
+            mockGamesStore
+                .Setup(games => games.FirstOrDefault(It.IsAny<Func<KeyValuePair<string, Game>, bool>>()))
+                .Returns(new KeyValuePair<string, Game>(hostConnectionId, game));
+
+            mockGamesStore
+                .Setup(games => games.TryUpdate(hostConnectionId, It.IsAny<Game>(), It.IsAny<Game>()))
+                .Callback((string key, Game newValue, Game _) => updatedGame = newValue)
+                .Returns(true);
+
+            var mockHostClient = new Mock<ISingleClientProxy>();
+            var mockClient = new Mock<ISingleClientProxy>();
+            mockClients
+                .Setup(clients => clients.Client(hostConnectionId))
+                .Returns(mockHostClient.Object);
+            mockClients
+                .Setup(clients => clients.Client(connectionId))
+                .Returns(mockClient.Object);
+
+            // Act
+            await hub.SubmitPrompt(prompt);
+
+            // Assert
+            Assert.NotNull(updatedGame);
+            Assert.Equal(GameState.Drawing, updatedGame.State);
+            mockClients.Verify(
+                clients => clients.Client(hostConnectionId).SendCoreAsync(
+                    "DrawTimerStarted",
+                    It.Is<object?[]>(args => args.Length == 1),
+                    default
+                ),
+                Times.Once
+            );
+            mockClients.Verify(
+                clients => clients.Client(connectionId).SendCoreAsync(
+                    "AwaitDrawings",
+                    It.Is<object?[]>(args => args.Length == 0),
+                    default
+                ),
+                Times.Once
+            );
+        }
+
+        [Fact]
+        public async Task SubmitPrompt_WhenNotInGame_ThrowsWithNotInAGameError()
+        {
+            // Arrange
+            mockGamesStore
+                .Setup(games => games.TryGetValue(connectionId, out It.Ref<Game?>.IsAny))
+                .Returns((string key, out Game? g) =>
+                {
+                    g = null;
+                    return false;
+                });
+            mockGamesStore
+                .Setup(games => games.FirstOrDefault(It.IsAny<Func<KeyValuePair<string, Game>, bool>>()))
+                .Returns(default(KeyValuePair<string, Game>));
+
+            // Act
+            async Task act() => await hub.SubmitPrompt(prompt);
+
+            // Assert
+            var ex = await Assert.ThrowsAsync<GameHubException>(act);
+            Assert.Contains(GameHubErrorCode.SubmitPrompt_NotInAGame.ToString(), ex.Message);
+        }
+
+        [Fact]
+        public async Task SubmitPrompt_WhenNotInPromptingState_ThrowsWithNotInPromptingPhaseError()
+        {
+            // Arrange
+            var game = new Game(
+                hostConnectionId: connectionId,
+                joinerConnectionId: joinerConnectionId,
+                state: GameState.NotStarted,
+                prompter: Role.Host);
+
+            mockGamesStore
+                .Setup(games => games.TryGetValue(connectionId, out It.Ref<Game?>.IsAny))
+                .Returns((string key, out Game? g) =>
+                {
+                    g = game;
+                    return true;
+                });
+
+            // Act
+            async Task act() => await hub.SubmitPrompt(prompt);
+
+            // Assert
+            var ex = await Assert.ThrowsAsync<GameHubException>(act);
+            Assert.Contains(GameHubErrorCode.SubmitPrompt_NotInPromptingPhase.ToString(), ex.Message);
+        }
+
+        [Fact]
+        public async Task SubmitPrompt_WhenNotPrompter_ThrowsWithNotPrompterError()
+        {
+            // Arrange
+            var game = new Game(
+                hostConnectionId: connectionId,
+                joinerConnectionId: joinerConnectionId,
+                state: GameState.Prompting,
+                prompter: Role.Joiner);
+
+            mockGamesStore
+                .Setup(games => games.TryGetValue(connectionId, out It.Ref<Game?>.IsAny))
+                .Returns((string key, out Game? g) =>
+                {
+                    g = game;
+                    return true;
+                });
+
+            // Act
+            async Task act() => await hub.SubmitPrompt(prompt);
+
+            // Assert
+            var ex = await Assert.ThrowsAsync<GameHubException>(act);
+            Assert.Contains(GameHubErrorCode.SubmitPrompt_NotPrompter.ToString(), ex.Message);
         }
     }
 }

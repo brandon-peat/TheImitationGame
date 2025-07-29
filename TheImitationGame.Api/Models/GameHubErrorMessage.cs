@@ -16,6 +16,10 @@
             GameHubErrorCode.StartGame_NoJoinerInGame => "You cannot start a game which is empty.",
             GameHubErrorCode.StartGame_AlreadyStartedGame => "Your game has already been started.",
 
+            GameHubErrorCode.SubmitPrompt_NotInAGame => "You are not in a game.",
+            GameHubErrorCode.SubmitPrompt_NotInPromptingPhase => "This game is not in the prompting phase.",
+            GameHubErrorCode.SubmitPrompt_NotPrompter => "You are not currently the prompter for this game.",
+
             GameHubErrorCode.UnknownError => "An unknown error occurred.",
             _ => "An unknown error occurred."
         };

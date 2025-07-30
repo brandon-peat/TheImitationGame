@@ -32,12 +32,6 @@ function Host({connectionReady}: {connectionReady: boolean}) {
     };
     connection.on('GameJoined', handleGameJoined);
 
-    const handleJoinerLeft = () => {
-      setGameJoined(false);
-      createGame();
-    };
-    connection.on('JoinerLeft', handleJoinerLeft);
-
     function handleGameStartedAsPrompter(defaultPrompt: string) {
       navigatingInternally.current = true;
       navigate('/prompt', { state: { defaultPrompt } });
@@ -52,7 +46,6 @@ function Host({connectionReady}: {connectionReady: boolean}) {
 
     return () => {
       connection.off('GameJoined', handleGameJoined);
-      connection.off('JoinerLeft', handleJoinerLeft);
       connection.off('PromptTimerStarted', handleGameStartedAsPrompter);
       connection.off('AwaitPrompt', handleGameStartedAsDrawer);
 

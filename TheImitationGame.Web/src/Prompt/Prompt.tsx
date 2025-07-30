@@ -11,6 +11,11 @@ function Prompt({connectionReady}: {connectionReady: boolean}) {
   useEffect(() => {
     if(!connectionReady || !defaultPrompt) navigate('/');
 
+    const handleAwaitDrawings = () => {
+      
+    };
+    connection.on('AwaitDrawings', handleAwaitDrawings);
+
     return () => {
       connection.invoke('LeaveGame')
         .catch((error) => {

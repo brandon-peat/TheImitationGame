@@ -1,8 +1,8 @@
 export const JoinGameErrorCodes = {
-  AlreadyJoinedGame: 'AlreadyJoinedGame',
-  CannotJoinOwnGame: 'CannotJoinOwnGame',
-  GameFull: 'GameFull',
-  GameNotFound: 'GameNotFound',
+  AlreadyJoinedGame: 'JoinGame_AlreadyJoinedGame',
+  CannotJoinOwnGame: 'JoinGame_CannotJoinOwnGame',
+  GameFull: 'JoinGame_GameFull',
+  GameNotFound: 'JoinGame_GameNotFound',
   UnknownError: 'UnknownError'
 } as const;
 

@@ -1,30 +1,42 @@
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { IconButton, TextField } from "@mui/material";
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import connection from '../signalr-connection';
 import { JoinGameErrorCodes } from './JoinGameErrorCode';
 
 function Join({connectionReady}: {connectionReady: boolean}) {
-  const navigate = useNavigate();
-
   const [joinResultMessage, setJoinResultMessage] = useState<string>('');
   const [gameJoined, setGameJoined] = useState<boolean>(false);
+
+  const navigatingInternally = useRef(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (!connectionReady) return;
 
-    const handleHostLeft = () => {
-      setGameJoined(false);
-      setJoinResultMessage('Host has left the game.');
-    };
-    connection.on('HostLeft', handleHostLeft);
+    function handleGameStartedAsPrompter(defaultPrompt: string) {
+      navigatingInternally.current = true;
+      navigate('/prompt', { state: { defaultPrompt } });
+    }
+    connection.on('PromptTimerStarted', handleGameStartedAsPrompter);
+
+    const handleGameStartedAsDrawer = () => {
+      navigatingInternally.current = true;
+      navigate('/draw');
+    }
+    connection.on('AwaitPrompt', handleGameStartedAsDrawer);
 
     return () => {
-      connection.invoke('LeaveGame')
-        .catch((error) => {
-          console.error('Error leaving game:', error);
-        });
+      connection.off('PromptTimerStarted', handleGameStartedAsPrompter);
+      connection.off('AwaitPrompt', handleGameStartedAsDrawer);
+
+      if(!navigatingInternally.current) {
+        connection.invoke('LeaveGame')
+          .catch((error) => {
+            console.error('Error leaving game:', error);
+          });
+      }
     }
   }, [connectionReady]);
 

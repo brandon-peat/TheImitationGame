@@ -1,6 +1,6 @@
 import Typography from '@mui/material/Typography';
 import { useEffect, useState } from 'react';
-import { Route, Routes, useLocation, useNavigate } from 'react-router-dom';
+import { Route, Routes, useLocation, useNavigate, useNavigationType } from 'react-router-dom';
 import './App.css';
 import Draw from './Draw/Draw';
 import Home from './Home/Home';
@@ -14,6 +14,7 @@ function App() {
   const [connectionReady, setConnectionReady] = useState(false);
   const [message, setMessage] = useState('');
 
+  const navigationType = useNavigationType();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -34,6 +35,15 @@ function App() {
       connection.off('JoinerLeft', handleOtherPlayerLeft);
     }
   }, []);
+
+  useEffect(() => {
+    if (navigationType === 'POP') {
+      navigate('/');
+      connection.invoke('LeaveGame').catch((error) => {
+        console.error('Error leaving game:', error);
+      });
+    }
+  }, [navigationType]);
 
   useEffect(() => {
     if(location.pathname !== '/') setMessage('');

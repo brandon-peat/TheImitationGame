@@ -48,13 +48,6 @@ function Host({connectionReady}: {connectionReady: boolean}) {
       connection.off('GameJoined', handleGameJoined);
       connection.off('PromptTimerStarted', handleGameStartedAsPrompter);
       connection.off('AwaitPrompt', handleGameStartedAsDrawer);
-
-      if (!navigatingInternally.current) {
-        connection.invoke('LeaveGame')
-          .catch((error) => {
-            console.error('Error leaving game:', error);
-          });
-        }
     }
   }, [connectionReady]);
 

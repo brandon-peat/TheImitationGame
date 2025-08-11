@@ -15,7 +15,7 @@ function Join({connectionReady}: {connectionReady: boolean}) {
   useEffect(() => {
     if (!connectionReady) return;
 
-    function handleGameStartedAsPrompter(defaultPrompt: string) {
+    const handleGameStartedAsPrompter = (defaultPrompt: string) => {
       navigatingInternally.current = true;
       navigate('/prompt', { state: { defaultPrompt } });
     }
@@ -30,13 +30,6 @@ function Join({connectionReady}: {connectionReady: boolean}) {
     return () => {
       connection.off('PromptTimerStarted', handleGameStartedAsPrompter);
       connection.off('AwaitPrompt', handleGameStartedAsDrawer);
-
-      if(!navigatingInternally.current) {
-        connection.invoke('LeaveGame')
-          .catch((error) => {
-            console.error('Error leaving game:', error);
-          });
-      }
     }
   }, [connectionReady]);
 

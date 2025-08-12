@@ -2,6 +2,7 @@ import Typography from '@mui/material/Typography';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import connection from '../signalr-connection';
+import Canvas from './Canvas/Canvas';
 
 function Draw({connectionReady}: {connectionReady: boolean}) {
   const navigate = useNavigate();
@@ -40,7 +41,7 @@ function Draw({connectionReady}: {connectionReady: boolean}) {
           </Typography>
         </div>
 
-        {/* TODO: Drawable canvas */}
+        <Canvas />
       </>
     )
   );

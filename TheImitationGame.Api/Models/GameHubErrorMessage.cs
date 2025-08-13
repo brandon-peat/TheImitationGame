@@ -20,6 +20,10 @@
             GameHubErrorCode.SubmitPrompt_NotInPromptingPhase => "This game is not in the prompting phase.",
             GameHubErrorCode.SubmitPrompt_NotPrompter => "You are not currently the prompter for this game.",
 
+            GameHubErrorCode.SubmitDrawing_NotInAGame => "You are not in a game.",
+            GameHubErrorCode.SubmitDrawing_NotInDrawingPhase => "This game is not in the drawing phase.",
+            GameHubErrorCode.SubmitDrawing_NotDrawer => "You are not currently the drawer for this game.",
+
             GameHubErrorCode.UnknownError => "An unknown error occurred.",
             _ => "An unknown error occurred."
         };

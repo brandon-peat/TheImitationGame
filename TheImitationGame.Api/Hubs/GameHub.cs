@@ -110,6 +110,37 @@ namespace TheImitationGame.Api.Hubs
             await Clients.Client(drawer!).SendAsync("DrawTimerStarted", prompt);
         }
 
+        public async Task SubmitDrawing(string image_b64)
+        {
+            var game = GetGameByMember(Context.ConnectionId)
+                ?? throw new GameHubException(GameHubErrorCode.SubmitDrawing_NotInAGame);
+
+            if (game.State != GameState.Drawing)
+                throw new GameHubException(GameHubErrorCode.SubmitDrawing_NotInDrawingPhase);
+
+            if (game.Prompter == (Context.ConnectionId == game.HostConnectionId ? Role.Host : Role.Joiner))
+                throw new GameHubException(GameHubErrorCode.SubmitDrawing_NotDrawer);
+
+            var prompter = (game.Prompter == Role.Host) ? game.HostConnectionId : game.JoinerConnectionId;
+            var drawer = (game.Prompter == Role.Host) ? game.JoinerConnectionId : game.HostConnectionId;
+
+            await Clients.Client(drawer!).SendAsync("AwaitGuess");
+
+            // TODO: increment each round
+            int imitationsAmount = 3;
+            var imitations = await GenerateImitations(game.Prompt!, image_b64, imitationsAmount);
+
+            int insertIndex = Random.Shared.Next(0, imitations.Count + 1);
+            imitations.Insert(insertIndex, image_b64);
+
+            var updatedGame = game.With(state: GameState.Guessing, realImageIndex: insertIndex);
+
+            if (!Games.TryUpdate(game.HostConnectionId, updatedGame, game))
+                throw new GameHubException(GameHubErrorCode.UnknownError);
+
+            await Clients.Client(prompter!).SendAsync("GuessTimerStarted", imitations);
+        }
+
         public override async Task OnDisconnectedAsync(Exception? exception)
         {
             await CloseGameWithHost(Context.ConnectionId);
@@ -186,6 +217,7 @@ namespace TheImitationGame.Api.Hubs
             using var process = new Process { StartInfo = start };
             process.Start();
 
+            // Send JSON input
             var input = new
             {
                 prompt,
@@ -196,16 +228,23 @@ namespace TheImitationGame.Api.Hubs
             await process.StandardInput.WriteAsync(jsonInput);
             process.StandardInput.Close();
 
-            string output = await process.StandardOutput.ReadToEndAsync();
-            string errors = await process.StandardError.ReadToEndAsync();
+            // Read stdout & stderr concurrently to avoid deadlock
+            var outputTask = process.StandardOutput.ReadToEndAsync();
+            var errorTask = process.StandardError.ReadToEndAsync();
 
+            await Task.WhenAll(outputTask, errorTask);
+
+            // Wait for process to exit AFTER streams are drained
             process.WaitForExit();
+
+            string output = outputTask.Result;
+            string errors = errorTask.Result;
 
             if (process.ExitCode != 0)
                 throw new Exception("Python error: " + errors);
 
             var result = JsonSerializer.Deserialize<List<string>>(output);
-            return result!;
+            return result ?? throw new Exception("Failed to parse Python output.");
         }
     }
 }

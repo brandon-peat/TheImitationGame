@@ -21,6 +21,7 @@
         public GameState State { get; set; }
         public string? Prompt { get; set; }
         public Role? Prompter { get; set; }
+        public int? RealImageIndex { get; set; }
 
         public Game(
             string hostConnectionId,
@@ -41,7 +42,8 @@
             string? joinerConnectionId = null,
             GameState? state = null,
             string? prompt = null,
-            Role? prompter = null)
+            Role? prompter = null,
+            int? realImageIndex = null)
         {
             return new Game(
                 hostConnectionId ?? HostConnectionId,

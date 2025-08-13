@@ -18,6 +18,10 @@
         SubmitPrompt_NotInPromptingPhase,
         SubmitPrompt_NotPrompter,
 
+        SubmitDrawing_NotInAGame,
+        SubmitDrawing_NotInDrawingPhase,
+        SubmitDrawing_NotDrawer,
+
         UnknownError
     }
 }

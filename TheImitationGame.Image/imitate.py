@@ -23,8 +23,8 @@ def generate_images_a1111(prompt, image_b64, amount):
     payload = {
         "prompt": prompt,
         "init_images": [image_b64],
-        "steps": 20,
-        "denoising_strength": 0.75,
+        "steps": 15,
+        "denoising_strength": 0.3,
         "sampler_name": "Euler a",
         "batch_size": amount,
         "width": 512,
@@ -33,12 +33,12 @@ def generate_images_a1111(prompt, image_b64, amount):
             "controlnet": {
                 "args": [
                     {
-                        "input_image": image_b64,
+                        "image": image_b64,
                         "module": "canny",
-                        "model": "control_v11p_sd15_canny [d14c016b]",
-                        "weight": 1.0,
-                        "resize_mode": "Scale to Fit (Inner Fit)",
-                        "control_mode": "Balanced",
+                        "model": "control_sd15_canny [fef5e48e]",
+                        "weight": 1.35,
+                        "resize_mode": "Resize and Fill",
+                        "control_mode": "ControlNet is more important",
                         "guidance_start": 0.0,
                         "guidance_end": 1.0,
                         "pixel_perfect": True

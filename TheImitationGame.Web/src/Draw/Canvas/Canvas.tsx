@@ -7,20 +7,24 @@ import { Button, IconButton } from '@mui/material';
 import { useRef, useState } from 'react';
 import { ReactSketchCanvas, type ReactSketchCanvasRef } from 'react-sketch-canvas';
 
-function Canvas() {
+function Canvas({ onSubmitDrawing }: { onSubmitDrawing: (imageDataUrl: string) => void }) {
   const canvasRef = useRef<ReactSketchCanvasRef>(null);
   const [eraseMode, setEraseMode] = useState(false);
 
-  function handleSubmitClick() {
-    // TODO: callback to Draw to submit
+  async function handleSubmitClick() {
+    if (canvasRef.current) {
+      const imageDataUrl = await canvasRef.current.exportImage('jpeg');
+      onSubmitDrawing(imageDataUrl);
+    }
   }
   return (
-    <div className='flex gap-4 w-4/5 h-4/5'>
-      <div className='flex flex-col gap-y-2 w-full h-9/10'>
+    <div className='flex gap-4 justify-center w-4/5 h-4/5'>
+      <div className='flex flex-col  gap-y-2'>
         <ReactSketchCanvas
           ref={canvasRef}
           strokeWidth={4}
           strokeColor='black'
+          className='!w-[512px] !h-[512px]'
         />
 
         <Button

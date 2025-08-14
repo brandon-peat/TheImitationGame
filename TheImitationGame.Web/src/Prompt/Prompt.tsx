@@ -8,6 +8,7 @@ function Prompt({connectionReady}: {connectionReady: boolean}) {
   const location = useLocation();
   const defaultPrompt = location.state?.defaultPrompt;
 
+  const [prompt, setPrompt] = useState<string>(defaultPrompt);
   const [prompting, setPrompting] = useState(true);
   const [promptSent, setPromptSent] = useState(false);
   const [images, setImages] = useState<string[]>([]);
@@ -36,13 +37,15 @@ function Prompt({connectionReady}: {connectionReady: boolean}) {
       <TextField sx={{ width: '60%' }}
         label={promptSent ? 'Your opponent is now drawing based on your prompt.' : 'What should your opponent draw?'}
         disabled={promptSent}
-        defaultValue={defaultPrompt}
+        defaultValue={prompt}
         variant={promptSent ? 'filled' : 'outlined'}
         onKeyDown={(e) => {
           if (e.key === 'Enter') {
             let input = e.target as HTMLInputElement;
             let prompt = input.value.trim();
             if (!prompt) return;
+            
+            setPrompt(prompt);
             connection.invoke('SubmitPrompt', prompt)
               .then(() => {
                 input.value = '';

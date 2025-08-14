@@ -30,7 +30,7 @@ function Prompt({connectionReady}: {connectionReady: boolean}) {
     return () => {
       connection.off('AwaitDrawings', handleAwaitDrawings);
     }
-  });
+  }, []);
 
   return (
     prompting ? (
@@ -44,7 +44,7 @@ function Prompt({connectionReady}: {connectionReady: boolean}) {
             let input = e.target as HTMLInputElement;
             let prompt = input.value.trim();
             if (!prompt) return;
-            
+
             setPrompt(prompt);
             connection.invoke('SubmitPrompt', prompt)
               .then(() => {

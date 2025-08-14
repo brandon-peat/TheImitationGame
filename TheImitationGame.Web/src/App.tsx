@@ -37,7 +37,7 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (navigationType === 'POP') {
+    if (navigationType === 'POP' && connectionReady) {
       navigate('/');
       connection.invoke('LeaveGame').catch((error) => {
         console.error('Error leaving game:', error);

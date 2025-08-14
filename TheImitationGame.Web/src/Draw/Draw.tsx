@@ -36,7 +36,7 @@ function Draw({connectionReady}: {connectionReady: boolean}) {
     return () => {
       connection.off('DrawTimerStarted', handleDrawTimerStarted);
     }
-  });
+  }, []);
 
   return (
     awaitingPrompt ? (

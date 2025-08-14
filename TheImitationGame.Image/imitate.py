@@ -2,12 +2,10 @@ import requests
 import base64
 from PIL import Image
 from io import BytesIO
-from postprocess import batch_post_process
 
 def imitate(prompt: str, image_b64: str, amount: int) -> list[str]:
-    raw_images = generate_images_a1111(prompt, image_b64, amount)
-    post_processed_images = batch_post_process(raw_images)
-    return post_processed_images
+    images = generate_images_a1111(prompt, image_b64, amount)
+    return images
 
 def image_to_base64(path):
     with open(path, "rb") as f:

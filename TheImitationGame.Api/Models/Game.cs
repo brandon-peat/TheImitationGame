@@ -28,13 +28,15 @@
             string? joinerConnectionId = null,
             GameState state = GameState.NotStarted,
             string? prompt = null,
-            Role? prompter = null)
+            Role? prompter = null,
+            int? realImageIndex = null)
         {
             HostConnectionId = hostConnectionId;
             JoinerConnectionId = joinerConnectionId;
             State = state;
             Prompt = prompt;
             Prompter = prompter;
+            RealImageIndex = realImageIndex;
         }
 
         public Game With(
@@ -50,7 +52,8 @@
                 joinerConnectionId ?? JoinerConnectionId,
                 state ?? State,
                 prompt ?? Prompt,
-                prompter ?? Prompter
+                prompter ?? Prompter,
+                realImageIndex ?? RealImageIndex
             );
         }
     }

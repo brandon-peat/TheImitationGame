@@ -6,9 +6,10 @@ using TheImitationGame.Api.Models;
 
 namespace TheImitationGame.Api.Hubs
 {
-    public class GameHub(IGamesStore games) : Hub
+    public class GameHub(IGamesStore games, IImitationGenerator imitationGenerator) : Hub
     {
         private readonly IGamesStore Games = games;
+        private readonly IImitationGenerator ImitationGenerator = imitationGenerator;
 
         public override async Task OnConnectedAsync()
         {
@@ -128,7 +129,7 @@ namespace TheImitationGame.Api.Hubs
 
             // TODO: increment each round
             int imitationsAmount = 3;
-            var imitations = await GenerateImitations(game.Prompt!, image_b64, imitationsAmount);
+            var imitations = await ImitationGenerator.GenerateImitations(game.Prompt!, image_b64, imitationsAmount);
 
             int insertIndex = Random.Shared.Next(0, imitations.Count + 1);
             imitations.Insert(insertIndex, image_b64);
@@ -148,7 +149,7 @@ namespace TheImitationGame.Api.Hubs
 
             await base.OnDisconnectedAsync(exception);
         }
-
+        \
         async Task CloseGameWithHost(string host)
         {
             if (Games.TryRemove(host, out Game? game))
@@ -199,52 +200,6 @@ namespace TheImitationGame.Api.Hubs
         {
             var game = GetGameByHost(connectionId) ?? GetGameByJoiner(connectionId);
             return game;
-        }
-
-        async Task<List<string>> GenerateImitations(string prompt, string image_b64, int amount)
-        {
-            var start = new ProcessStartInfo
-            {
-                FileName = "python",
-                Arguments = @"..\TheImitationGame.Image\cli.py",
-                RedirectStandardInput = true,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
-
-            using var process = new Process { StartInfo = start };
-            process.Start();
-
-            // Send JSON input
-            var input = new
-            {
-                prompt,
-                image_b64,
-                amount
-            };
-            string jsonInput = JsonSerializer.Serialize(input);
-            await process.StandardInput.WriteAsync(jsonInput);
-            process.StandardInput.Close();
-
-            // Read stdout & stderr concurrently to avoid deadlock
-            var outputTask = process.StandardOutput.ReadToEndAsync();
-            var errorTask = process.StandardError.ReadToEndAsync();
-
-            await Task.WhenAll(outputTask, errorTask);
-
-            // Wait for process to exit AFTER streams are drained
-            process.WaitForExit();
-
-            string output = outputTask.Result;
-            string errors = errorTask.Result;
-
-            if (process.ExitCode != 0)
-                throw new Exception("Python error: " + errors);
-
-            var result = JsonSerializer.Deserialize<List<string>>(output);
-            return result ?? throw new Exception("Failed to parse Python output.");
         }
     }
 }

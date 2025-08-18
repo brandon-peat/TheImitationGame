@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.SignalR;
 using TheImitationGame.Api.Hubs;
 using TheImitationGame.Api.Models;
 using TheImitationGame.Api.Interfaces;
+using System.Runtime.ConstrainedExecution;
 
 namespace TheImitationGame.Tests
 {
@@ -13,18 +14,20 @@ namespace TheImitationGame.Tests
         private readonly Mock<IGroupManager> mockGroups = new();
         private readonly Mock<IGamesStore> mockGamesStore = new();
         private readonly Mock<HubCallerContext> mockContext = new();
+        private readonly Mock<IImitationGenerator> mockImitationGenerator = new();
 
         private readonly string connectionId = "test-connection-id";
         private readonly string hostConnectionId = "host-connection-id";
         private readonly string joinerConnectionId = "joiner-connection-id";
 
         private readonly string prompt = "A cat not exploding";
+        private readonly string mockB64String = "image";
 
         public GameHubTests()
         {
             mockContext.Setup(context => context.ConnectionId).Returns(connectionId);
 
-            hub = new GameHub(mockGamesStore.Object)
+            hub = new GameHub(mockGamesStore.Object, mockImitationGenerator.Object)
             {
                 Clients = mockClients.Object,
                 Groups = mockGroups.Object,
@@ -708,6 +711,71 @@ namespace TheImitationGame.Tests
             // Assert
             var ex = await Assert.ThrowsAsync<GameHubException>(act);
             Assert.Contains(GameHubErrorCode.SubmitPrompt_NotPrompter.ToString(), ex.Message);
+        }
+
+        [Fact]
+        public async Task SubmitDrawing_WithHostAsDrawer_SetsGameStateToGuessingAndSetsRealImageIndexAndNotifiesPlayers()
+        {
+            // Arrange
+            Game? updatedGame = null;
+            var game = new Game(
+                hostConnectionId: connectionId,
+                joinerConnectionId: joinerConnectionId,
+                state: GameState.Drawing,
+                prompt: prompt,
+                prompter: Role.Joiner);
+
+            mockGamesStore
+                .Setup(games => games.TryGetValue(connectionId, out It.Ref<Game?>.IsAny))
+                .Returns((string key, out Game? g) =>
+                {
+                    g = game;
+                    return true;
+                });
+
+            mockGamesStore
+                .Setup(games => games.TryUpdate(connectionId, It.IsAny<Game>(), It.IsAny<Game>()))
+                .Callback((string key, Game newValue, Game _) => updatedGame = newValue)
+                .Returns(true);
+
+            var mockClient = new Mock<ISingleClientProxy>();
+            var mockJoinerClient = new Mock<ISingleClientProxy>();
+            mockClients
+                .Setup(clients => clients.Client(connectionId))
+                .Returns(mockClient.Object);
+            mockClients
+                .Setup(clients => clients.Client(joinerConnectionId))
+                .Returns(mockJoinerClient.Object);
+
+            mockImitationGenerator
+                .Setup(gen => gen.GenerateImitations(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>()))
+                .ReturnsAsync(["image1", "image2", "image3"]);
+
+            // Act
+            await hub.SubmitDrawing(mockB64String);
+
+            // Assert
+            Assert.NotNull(updatedGame);
+            Assert.Equal(GameState.Guessing, updatedGame.State);
+            Assert.NotNull(updatedGame.RealImageIndex);
+            Assert.InRange(updatedGame.RealImageIndex.Value, 0, 3);
+
+            mockClients.Verify(
+                clients => clients.Client(connectionId).SendCoreAsync(
+                    "AwaitGuess",
+                    It.Is<object?[]>(args => args.Length == 0),
+                    default
+                ),
+                Times.Once
+            );
+            mockClients.Verify(
+                clients => clients.Client(joinerConnectionId).SendCoreAsync(
+                    "GuessTimerStarted",
+                    It.Is<object?[]>(args => args.Length == 1),
+                    default
+                ),
+                Times.Once
+            );
         }
     }
 }

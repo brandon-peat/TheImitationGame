@@ -1,5 +1,6 @@
 using TheImitationGame.Api.Hubs;
 using TheImitationGame.Api.Interfaces;
+using TheImitationGame.Api.Services;
 using TheImitationGame.Api.Stores;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -29,6 +30,7 @@ builder.Services.AddSignalR(options =>
 });
 
 builder.Services.AddSingleton<IGamesStore, InMemoryGamesStore>();
+builder.Services.AddSingleton<IImitationGenerator, ImitationGenerator>();
 
 var app = builder.Build();
 

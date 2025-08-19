@@ -4,6 +4,7 @@ using TheImitationGame.Api.Hubs;
 using TheImitationGame.Api.Models;
 using TheImitationGame.Api.Interfaces;
 using System.Runtime.ConstrainedExecution;
+using Microsoft.AspNetCore.DataProtection.KeyManagement;
 
 namespace TheImitationGame.Tests
 {
@@ -19,6 +20,9 @@ namespace TheImitationGame.Tests
         private readonly string connectionId = "test-connection-id";
         private readonly string hostConnectionId = "host-connection-id";
         private readonly string joinerConnectionId = "joiner-connection-id";
+        private readonly Mock<ISingleClientProxy> mockClient = new();
+        private readonly Mock<ISingleClientProxy> mockHostClient = new();
+        private readonly Mock<ISingleClientProxy> mockJoinerClient = new();
 
         private readonly string prompt = "A cat not exploding";
         private readonly string mockB64String = "image";
@@ -33,6 +37,52 @@ namespace TheImitationGame.Tests
                 Groups = mockGroups.Object,
                 Context = mockContext.Object
             };
+
+            mockClients
+                .Setup(clients => clients.Client(connectionId))
+                .Returns(mockClient.Object);
+            mockClients
+                .Setup(clients => clients.Client(hostConnectionId))
+                .Returns(mockHostClient.Object);
+            mockClients
+                .Setup(clients => clients.Client(joinerConnectionId))
+                .Returns(mockJoinerClient.Object);
+        }
+
+        private void SetupGameInStore(Game game)
+        {
+            mockGamesStore
+                .Setup(store => store.TryGetValue(game.HostConnectionId, out It.Ref<Game?>.IsAny))
+                .Returns((string k, out Game? g) => { g = game; return true; });
+
+            if (game.JoinerConnectionId != null)
+            {
+                mockGamesStore
+                    .Setup(store => store.FirstOrDefault(It.IsAny<Func<KeyValuePair<string, Game>, bool>>()))
+                    .Returns(new KeyValuePair<string, Game>(game.HostConnectionId, game));
+            }
+        }
+
+        private void SetupTryUpdateCallback(
+            string hostConnectionId,
+            Action<Game>? onUpdate = null,
+            bool returnValue = true)
+        {
+            mockGamesStore
+                .Setup(store => store.TryUpdate(hostConnectionId, It.IsAny<Game>(), It.IsAny<Game>()))
+                .Callback((string key, Game newValue, Game _) => onUpdate?.Invoke(newValue))
+                .Returns(returnValue);
+        }
+
+        private void SetupNoGameWithHostIdInStore(string hostConnectionId)
+        {
+            mockGamesStore
+                .Setup(games => games.TryGetValue(hostConnectionId, out It.Ref<Game?>.IsAny))
+                .Returns((string key, out Game? g) =>
+                {
+                    g = null;
+                    return false;
+                });
         }
 
         [Fact]
@@ -70,12 +120,8 @@ namespace TheImitationGame.Tests
         public async Task CreateGame_HavingJoinedOtherGame_ThrowsWithAlreadyJoinedGameError()
         {
             // Arrange
-            mockGamesStore
-                .Setup(games => games.FirstOrDefault(It.IsAny<Func<KeyValuePair<string, Game>, bool>>()))
-                .Returns(new KeyValuePair<string, Game>(
-                    hostConnectionId,
-                    new Game(hostConnectionId, connectionId)
-                ));
+            Game existingGame = new(hostConnectionId, connectionId);
+            SetupGameInStore(existingGame);
 
             // Act
             async Task<string> act() => await hub.CreateGame();
@@ -114,8 +160,6 @@ namespace TheImitationGame.Tests
         public async Task LeaveGame_WhenHostForFilledGame_RemovesJoinerFromGroupAndNotifiesJoiner()
         {
             // Arrange
-            var mockJoinerClient = new Mock<ISingleClientProxy>();
-
             mockGamesStore
                 .Setup(games => games.TryRemove(connectionId, out It.Ref<Game?>.IsAny))
                 .Returns((string key, out Game? game) =>
@@ -123,9 +167,6 @@ namespace TheImitationGame.Tests
                     game = new Game(hostConnectionId, joinerConnectionId);
                     return true;
                 });
-            mockClients
-                .Setup(clients => clients.Client(joinerConnectionId))
-                .Returns(mockJoinerClient.Object);
 
             // Act
             await hub.LeaveGame();
@@ -149,17 +190,8 @@ namespace TheImitationGame.Tests
         public async Task LeaveGame_WhenJoinerForGame_RemovesGameAndRemovesBothMembersFromGroupAndNotifiesHost()
         {
             // Arrange
-            var mockHostClient = new Mock<ISingleClientProxy>();
-
-            mockGamesStore
-                .Setup(games => games.FirstOrDefault(It.IsAny<Func<KeyValuePair<string, Game>, bool>>()))
-                .Returns(new KeyValuePair<string, Game>(
-                    hostConnectionId,
-                    new Game(hostConnectionId, connectionId)
-                ));
-            mockClients
-                .Setup(clients => clients.Client(hostConnectionId))
-                .Returns(mockHostClient.Object);
+            Game joinedGame = new(hostConnectionId, connectionId);
+            SetupGameInStore(joinedGame);
 
             // Act
             await hub.LeaveGame();
@@ -215,30 +247,20 @@ namespace TheImitationGame.Tests
         public async Task JoinGame_WithValidGameId_AddsJoinerToGameAndGroupAndNotifiesHost()
         {
             // Arrange
-            var mockHostClient = new Mock<ISingleClientProxy>();
-
-            mockGamesStore
-                .Setup(games => games.TryGetValue(hostConnectionId, out It.Ref<Game?>.IsAny))
-                .Returns((string key, out Game? game) =>
-                {
-                    game = new Game(hostConnectionId);
-                    return true;
-                });
-            mockGamesStore
-                .Setup(games => games.TryUpdate(hostConnectionId, It.IsAny<Game>(), It.IsAny<Game>()))
-                .Returns(true);
-            mockClients
-                .Setup(clients => clients.Client(hostConnectionId))
-                .Returns(mockHostClient.Object);
+            Game gameToJoin = new(hostConnectionId);
+            SetupGameInStore(gameToJoin);
+            Game? updatedGame = null;
+            SetupTryUpdateCallback(
+                hostConnectionId,
+                g => updatedGame = g
+            );
 
             // Act
             await hub.JoinGame(hostConnectionId);
 
             // Assert
-            mockGamesStore.Verify(
-                store => store.TryUpdate(hostConnectionId, It.IsAny<Game>(), It.IsAny<Game>()),
-                Times.Once
-            );
+            Assert.NotNull(updatedGame);
+            Assert.Equal(connectionId, updatedGame.JoinerConnectionId);
             mockGroups.Verify(
                 groups => groups.AddToGroupAsync(connectionId, hostConnectionId, default),
                 Times.Once
@@ -273,9 +295,7 @@ namespace TheImitationGame.Tests
         public async Task JoinGame_WithInvalidGameCode_ThrowsWithGameNotFoundError()
         {
             // Arrange
-            mockGamesStore
-                .Setup(games => games.TryGetValue(hostConnectionId, out It.Ref<Game?>.IsAny))
-                .Returns(false);
+            SetupNoGameWithHostIdInStore(hostConnectionId);
 
             // Act
             async Task act() => await hub.JoinGame(hostConnectionId);
@@ -289,13 +309,8 @@ namespace TheImitationGame.Tests
         public async Task JoinGame_WithOwnGameCode_ThrowsWithCannotJoinOwnGameError()
         {
             // Arrange
-            mockGamesStore
-                .Setup(games => games.TryGetValue(connectionId, out It.Ref<Game?>.IsAny))
-                .Returns((string key, out string? joiner) =>
-                {
-                    joiner = null;
-                    return true;
-                });
+            Game hostedGame = new (connectionId);
+            SetupGameInStore(hostedGame);
 
             // Act
             async Task act() => await hub.JoinGame(connectionId);
@@ -309,13 +324,8 @@ namespace TheImitationGame.Tests
         public async Task JoinGame_WhenGameIsFull_ThrowsWithGameFullError()
         {
             // Arrange
-            mockGamesStore
-                .Setup(games => games.TryGetValue(hostConnectionId, out It.Ref<Game?>.IsAny))
-                .Returns((string key, out Game? game) =>
-                {
-                    game = new Game(hostConnectionId, joinerConnectionId);
-                    return true;
-                });
+            Game fullGame = new(hostConnectionId, joinerConnectionId);
+            SetupGameInStore(fullGame);
 
             // Act
             async Task act() => await hub.JoinGame(hostConnectionId);
@@ -357,29 +367,13 @@ namespace TheImitationGame.Tests
         public async Task StartGame_WithValidJoinedGameAndHostFirst_SetsGameStateToPromptingAndNotifiesPlayers()
         {
             // Arrange
-            var game = new Game(connectionId, joinerConnectionId);
+            Game game = new(connectionId, joinerConnectionId);
+            SetupGameInStore(game);
             Game? updatedGame = null;
-
-            mockGamesStore
-                .Setup(games => games.TryGetValue(connectionId, out It.Ref<Game?>.IsAny))
-                .Returns((string key, out Game? g) =>
-                {
-                    g = game;
-                    return true;
-                });
-            mockGamesStore
-                .Setup(games => games.TryUpdate(connectionId, It.IsAny<Game>(), It.IsAny<Game>()))
-                .Callback((string key, Game newValue, Game _) => updatedGame = newValue)
-                .Returns(true);
-
-            var mockHostClient = new Mock<ISingleClientProxy>();
-            var mockJoinerClient = new Mock<ISingleClientProxy>();
-            mockClients
-                .Setup(clients => clients.Client(connectionId))
-                .Returns(mockHostClient.Object);
-            mockClients
-                .Setup(clients => clients.Client(joinerConnectionId))
-                .Returns(mockJoinerClient.Object);
+            SetupTryUpdateCallback(
+                connectionId,
+                g => updatedGame = g
+            );
 
             // Act
             await hub.StartGame(true);
@@ -409,29 +403,13 @@ namespace TheImitationGame.Tests
         public async Task StartGame_WithValidJoinedGameAndJoinerFirst_SetsGameStateToPromptingAndNotifiesPlayers()
         {
             // Arrange
-            var game = new Game(connectionId, joinerConnectionId);
+            Game game = new(connectionId, joinerConnectionId);
+            SetupGameInStore(game);
             Game? updatedGame = null;
-
-            mockGamesStore
-                .Setup(games => games.TryGetValue(connectionId, out It.Ref<Game?>.IsAny))
-                .Returns((string key, out Game? g) =>
-                {
-                    g = game;
-                    return true;
-                });
-            mockGamesStore
-                .Setup(games => games.TryUpdate(connectionId, It.IsAny<Game>(), It.IsAny<Game>()))
-                .Callback((string key, Game newValue, Game _) => updatedGame = newValue)
-                .Returns(true);
-
-            var mockClient = new Mock<ISingleClientProxy>();
-            var mockJoinerClient = new Mock<ISingleClientProxy>();
-            mockClients
-                .Setup(clients => clients.Client(connectionId))
-                .Returns(mockClient.Object);
-            mockClients
-                .Setup(clients => clients.Client(joinerConnectionId))
-                .Returns(mockJoinerClient.Object);
+            SetupTryUpdateCallback(
+                connectionId,
+                g => updatedGame = g
+            );
 
             // Act
             await hub.StartGame(false);
@@ -461,13 +439,7 @@ namespace TheImitationGame.Tests
         public async Task StartGame_WithNoHostedGame_ThrowsWithNoGameToStartError()
         {
             // Arrange
-            mockGamesStore
-                .Setup(games => games.TryGetValue(connectionId, out It.Ref<Game?>.IsAny))
-                .Returns((string key, out Game? g) =>
-                {
-                    g = null;
-                    return false;
-                });
+            SetupNoGameWithHostIdInStore(connectionId);
 
             // Act
             async Task act() => await hub.StartGame(false);
@@ -481,15 +453,8 @@ namespace TheImitationGame.Tests
         public async Task StartGame_WithNoJoiner_ThrowsWithNoJoinerInGameError()
         {
             // Arrange
-            var game = new Game(connectionId);
-
-            mockGamesStore
-                .Setup(games => games.TryGetValue(connectionId, out It.Ref<Game?>.IsAny))
-                .Returns((string key, out Game? g) =>
-                {
-                    g = game;
-                    return true;
-                });
+            Game game = new(connectionId);
+            SetupGameInStore(game);
 
             // Act
             async Task act() => await hub.StartGame(false);
@@ -503,15 +468,8 @@ namespace TheImitationGame.Tests
         public async Task StartGame_WithAlreadyStartedGame_ThrowsWithAlreadyStartedGameError()
         {
             // Arrange
-            var game = new Game(connectionId, joinerConnectionId, GameState.Prompting);
-
-            mockGamesStore
-                .Setup(games => games.TryGetValue(connectionId, out It.Ref<Game?>.IsAny))
-                .Returns((string key, out Game? g) =>
-                {
-                    g = game;
-                    return true;
-                });
+            Game game = new(connectionId, joinerConnectionId, GameState.Prompting);
+            SetupGameInStore(game);
 
             // Act
             async Task act() => await hub.StartGame(false);
@@ -525,34 +483,13 @@ namespace TheImitationGame.Tests
         public async Task SubmitPrompt_WithHostAsPrompter_SetsGameStateToDrawingAndSetsPromptAndNotifiesPlayers()
         {
             // Arrange
-            var game = new Game(
-                hostConnectionId: connectionId,
-                joinerConnectionId: joinerConnectionId,
-                state: GameState.Prompting,
-                prompter: Role.Host);
+            Game game = new(connectionId, joinerConnectionId, GameState.Prompting, prompter: Role.Host);
+            SetupGameInStore(game);
             Game? updatedGame = null;
-
-            mockGamesStore
-                .Setup(games => games.TryGetValue(connectionId, out It.Ref<Game?>.IsAny))
-                .Returns((string key, out Game? g) =>
-                {
-                    g = game;
-                    return true;
-                });
-
-            mockGamesStore
-                .Setup(games => games.TryUpdate(connectionId, It.IsAny<Game>(), It.IsAny<Game>()))
-                .Callback((string key, Game newValue, Game _) => updatedGame = newValue)
-                .Returns(true);
-
-            var mockClient = new Mock<ISingleClientProxy>();
-            var mockJoinerClient = new Mock<ISingleClientProxy>();
-            mockClients
-                .Setup(clients => clients.Client(connectionId))
-                .Returns(mockClient.Object);
-            mockClients
-                .Setup(clients => clients.Client(joinerConnectionId))
-                .Returns(mockJoinerClient.Object);
+            SetupTryUpdateCallback(
+                connectionId,
+                g => updatedGame = g
+            );
 
             // Act
             await hub.SubmitPrompt(prompt);
@@ -582,37 +519,13 @@ namespace TheImitationGame.Tests
         public async Task SubmitPrompt_WithJoinerAsPrompter_SetsGameStateToDrawingAndSetsPromptAndNotifiesPlayers()
         {
             // Arrange
-            var game = new Game(
-                hostConnectionId: hostConnectionId,
-                joinerConnectionId: connectionId,
-                state: GameState.Prompting,
-                prompter: Role.Joiner);
+            Game game = new(hostConnectionId, connectionId, GameState.Prompting, prompter: Role.Joiner);
+            SetupGameInStore(game);
             Game? updatedGame = null;
-
-            mockGamesStore
-                .Setup(games => games.TryGetValue(hostConnectionId, out It.Ref<Game?>.IsAny))
-                .Returns((string key, out Game? g) =>
-                {
-                    g = null;
-                    return false;
-                });
-            mockGamesStore
-                .Setup(games => games.FirstOrDefault(It.IsAny<Func<KeyValuePair<string, Game>, bool>>()))
-                .Returns(new KeyValuePair<string, Game>(hostConnectionId, game));
-
-            mockGamesStore
-                .Setup(games => games.TryUpdate(hostConnectionId, It.IsAny<Game>(), It.IsAny<Game>()))
-                .Callback((string key, Game newValue, Game _) => updatedGame = newValue)
-                .Returns(true);
-
-            var mockHostClient = new Mock<ISingleClientProxy>();
-            var mockClient = new Mock<ISingleClientProxy>();
-            mockClients
-                .Setup(clients => clients.Client(hostConnectionId))
-                .Returns(mockHostClient.Object);
-            mockClients
-                .Setup(clients => clients.Client(connectionId))
-                .Returns(mockClient.Object);
+            SetupTryUpdateCallback(
+                hostConnectionId,
+                g => updatedGame = g
+            );
 
             // Act
             await hub.SubmitPrompt(prompt);
@@ -642,13 +555,7 @@ namespace TheImitationGame.Tests
         public async Task SubmitPrompt_WhenNotInGame_ThrowsWithNotInAGameError()
         {
             // Arrange
-            mockGamesStore
-                .Setup(games => games.TryGetValue(connectionId, out It.Ref<Game?>.IsAny))
-                .Returns((string key, out Game? g) =>
-                {
-                    g = null;
-                    return false;
-                });
+            SetupNoGameWithHostIdInStore(connectionId);
             mockGamesStore
                 .Setup(games => games.FirstOrDefault(It.IsAny<Func<KeyValuePair<string, Game>, bool>>()))
                 .Returns(default(KeyValuePair<string, Game>));
@@ -665,19 +572,8 @@ namespace TheImitationGame.Tests
         public async Task SubmitPrompt_WhenNotInPromptingState_ThrowsWithNotInPromptingPhaseError()
         {
             // Arrange
-            var game = new Game(
-                hostConnectionId: connectionId,
-                joinerConnectionId: joinerConnectionId,
-                state: GameState.NotStarted,
-                prompter: Role.Host);
-
-            mockGamesStore
-                .Setup(games => games.TryGetValue(connectionId, out It.Ref<Game?>.IsAny))
-                .Returns((string key, out Game? g) =>
-                {
-                    g = game;
-                    return true;
-                });
+            Game game = new(connectionId, joinerConnectionId, GameState.NotStarted, prompter: Role.Host);
+            SetupGameInStore(game);
 
             // Act
             async Task act() => await hub.SubmitPrompt(prompt);
@@ -691,19 +587,8 @@ namespace TheImitationGame.Tests
         public async Task SubmitPrompt_WhenNotPrompter_ThrowsWithNotPrompterError()
         {
             // Arrange
-            var game = new Game(
-                hostConnectionId: connectionId,
-                joinerConnectionId: joinerConnectionId,
-                state: GameState.Prompting,
-                prompter: Role.Joiner);
-
-            mockGamesStore
-                .Setup(games => games.TryGetValue(connectionId, out It.Ref<Game?>.IsAny))
-                .Returns((string key, out Game? g) =>
-                {
-                    g = game;
-                    return true;
-                });
+            Game game = new(connectionId, joinerConnectionId, GameState.Prompting, prompter: Role.Joiner);
+            SetupGameInStore(game);
 
             // Act
             async Task act() => await hub.SubmitPrompt(prompt);
@@ -717,35 +602,13 @@ namespace TheImitationGame.Tests
         public async Task SubmitDrawing_WithHostAsDrawer_SetsGameStateToGuessingAndSetsRealImageIndexAndNotifiesPlayers()
         {
             // Arrange
+            Game game = new(connectionId, joinerConnectionId, GameState.Drawing, prompt, Role.Joiner);
+            SetupGameInStore(game);
             Game? updatedGame = null;
-            var game = new Game(
-                hostConnectionId: connectionId,
-                joinerConnectionId: joinerConnectionId,
-                state: GameState.Drawing,
-                prompt: prompt,
-                prompter: Role.Joiner);
-
-            mockGamesStore
-                .Setup(games => games.TryGetValue(connectionId, out It.Ref<Game?>.IsAny))
-                .Returns((string key, out Game? g) =>
-                {
-                    g = game;
-                    return true;
-                });
-
-            mockGamesStore
-                .Setup(games => games.TryUpdate(connectionId, It.IsAny<Game>(), It.IsAny<Game>()))
-                .Callback((string key, Game newValue, Game _) => updatedGame = newValue)
-                .Returns(true);
-
-            var mockClient = new Mock<ISingleClientProxy>();
-            var mockJoinerClient = new Mock<ISingleClientProxy>();
-            mockClients
-                .Setup(clients => clients.Client(connectionId))
-                .Returns(mockClient.Object);
-            mockClients
-                .Setup(clients => clients.Client(joinerConnectionId))
-                .Returns(mockJoinerClient.Object);
+            SetupTryUpdateCallback(
+                connectionId,
+                g => updatedGame = g
+            );
 
             mockImitationGenerator
                 .Setup(gen => gen.GenerateImitations(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>()))

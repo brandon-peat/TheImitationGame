@@ -149,7 +149,7 @@ namespace TheImitationGame.Api.Hubs
 
             await base.OnDisconnectedAsync(exception);
         }
-        \
+        
         async Task CloseGameWithHost(string host)
         {
             if (Games.TryRemove(host, out Game? game))

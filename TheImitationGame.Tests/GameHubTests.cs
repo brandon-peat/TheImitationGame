@@ -3,8 +3,6 @@ using Microsoft.AspNetCore.SignalR;
 using TheImitationGame.Api.Hubs;
 using TheImitationGame.Api.Models;
 using TheImitationGame.Api.Interfaces;
-using System.Runtime.ConstrainedExecution;
-using Microsoft.AspNetCore.DataProtection.KeyManagement;
 
 namespace TheImitationGame.Tests
 {
@@ -85,6 +83,22 @@ namespace TheImitationGame.Tests
                 });
         }
 
+        private void VerifyClientMessaged(
+            string connectionId,
+            string methodName,
+            int argsLength,
+            Func<Times> times)
+        {
+            mockClients.Verify(
+                clients => clients.Client(connectionId).SendCoreAsync(
+                    methodName,
+                    It.Is<object?[]>(args => args.Length == argsLength),
+                    default
+                ),
+                times
+            );
+        }
+
         [Fact]
         public async Task CreateGame_WhenCalled_AddsGameAndAddsCallerToGroupWithCorrectId()
         {
@@ -114,6 +128,7 @@ namespace TheImitationGame.Tests
             // Assert
             var ex = await Assert.ThrowsAsync<GameHubException>(act);
             Assert.Contains(GameHubErrorCode.CreateGame_AlreadyCreatedGame.ToString(), ex.Message);
+            mockGroups.VerifyNoOtherCalls();
         }
 
         [Fact]
@@ -129,10 +144,11 @@ namespace TheImitationGame.Tests
             // Assert
             var ex = await Assert.ThrowsAsync<GameHubException>(act);
             Assert.Contains(GameHubErrorCode.CreateGame_AlreadyJoinedGame.ToString(), ex.Message);
+            mockGroups.VerifyNoOtherCalls();
         }
 
         [Fact]
-        public async Task LeaveGame_WhenHostForEmptyGame_RemovesGameAndRemovesHostFromGroup()
+        public async Task LeaveGame_AsHostForEmptyGame_RemovesGameAndRemovesHostFromGroup()
         {
             // Arrange
             mockGamesStore
@@ -154,10 +170,12 @@ namespace TheImitationGame.Tests
                 groups => groups.RemoveFromGroupAsync(connectionId, connectionId, default),
                 Times.Once
             );
+            mockGroups.VerifyNoOtherCalls();
+            mockClients.VerifyNoOtherCalls();
         }
 
         [Fact]
-        public async Task LeaveGame_WhenHostForFilledGame_RemovesJoinerFromGroupAndNotifiesJoiner()
+        public async Task LeaveGame_AsHostForFilledGame_RemovesBothMembersFromGroupAndNotifiesJoiner()
         {
             // Arrange
             mockGamesStore
@@ -173,21 +191,20 @@ namespace TheImitationGame.Tests
 
             // Assert
             mockGroups.Verify(
+                groups => groups.RemoveFromGroupAsync(connectionId, connectionId, default),
+                Times.Once
+            );
+            mockGroups.Verify(
                 groups => groups.RemoveFromGroupAsync(joinerConnectionId, connectionId, default),
                 Times.Once
             );
-            mockJoinerClient.Verify(
-                client => client.SendCoreAsync(
-                    "HostLeft",
-                    It.Is<object?[]>(args => args.Length == 0),
-                    default
-                ),
-                Times.Once
-            );
+            VerifyClientMessaged(joinerConnectionId, "HostLeft", 0, Times.Once);
+            mockGroups.VerifyNoOtherCalls();
+            mockClients.VerifyNoOtherCalls();
         }
 
         [Fact]
-        public async Task LeaveGame_WhenJoinerForGame_RemovesGameAndRemovesBothMembersFromGroupAndNotifiesHost()
+        public async Task LeaveGame_AsJoinerForGame_RemovesGameAndRemovesBothMembersFromGroupAndNotifiesHost()
         {
             // Arrange
             Game joinedGame = new(hostConnectionId, connectionId);
@@ -209,14 +226,9 @@ namespace TheImitationGame.Tests
                 groups => groups.RemoveFromGroupAsync(connectionId, hostConnectionId, default),
                 Times.Once
             );
-            mockHostClient.Verify(
-                client => client.SendCoreAsync(
-                    "JoinerLeft",
-                    It.Is<object?[]>(args => args.Length == 0),
-                    default
-                ),
-                Times.Once
-            );
+            VerifyClientMessaged(hostConnectionId, "JoinerLeft", 0, Times.Once);
+            mockGroups.VerifyNoOtherCalls();
+            mockClients.VerifyNoOtherCalls();
         }
 
         [Fact]
@@ -265,14 +277,9 @@ namespace TheImitationGame.Tests
                 groups => groups.AddToGroupAsync(connectionId, hostConnectionId, default),
                 Times.Once
             );
-            mockHostClient.Verify(
-                client => client.SendCoreAsync(
-                    "GameJoined",
-                    It.Is<object?[]>(args => args.Length == 0),
-                    default
-                ),
-                Times.Once
-            );
+            VerifyClientMessaged(hostConnectionId, "GameJoined", 0, Times.Once);
+            mockClients.VerifyNoOtherCalls();
+            mockGroups.VerifyNoOtherCalls();
         }
 
         [Fact]
@@ -289,20 +296,8 @@ namespace TheImitationGame.Tests
             // Assert
             var ex = await Assert.ThrowsAsync<GameHubException>(act);
             Assert.Contains(GameHubErrorCode.JoinGame_AlreadyJoinedGame.ToString(), ex.Message);
-        }
-
-        [Fact]
-        public async Task JoinGame_WithInvalidGameCode_ThrowsWithGameNotFoundError()
-        {
-            // Arrange
-            SetupNoGameWithHostIdInStore(hostConnectionId);
-
-            // Act
-            async Task act() => await hub.JoinGame(hostConnectionId);
-
-            // Assert
-            var ex = await Assert.ThrowsAsync<GameHubException>(act);
-            Assert.Contains(GameHubErrorCode.JoinGame_GameNotFound.ToString(), ex.Message);
+            mockClients.VerifyNoOtherCalls();
+            mockGroups.VerifyNoOtherCalls();
         }
 
         [Fact]
@@ -318,6 +313,8 @@ namespace TheImitationGame.Tests
             // Assert
             var ex = await Assert.ThrowsAsync<GameHubException>(act);
             Assert.Contains(GameHubErrorCode.JoinGame_CannotJoinOwnGame.ToString(), ex.Message);
+            mockClients.VerifyNoOtherCalls();
+            mockGroups.VerifyNoOtherCalls();
         }
 
         [Fact]
@@ -333,13 +330,19 @@ namespace TheImitationGame.Tests
             // Assert
             var ex = await Assert.ThrowsAsync<GameHubException>(act);
             Assert.Contains(GameHubErrorCode.JoinGame_GameFull.ToString(), ex.Message);
+            mockClients.VerifyNoOtherCalls();
+            mockGroups.VerifyNoOtherCalls();
         }
 
-        [Fact]
-        public async Task JoinGame_WithNullGameId_ThrowsWithGameNotFoundError()
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        [InlineData(" ")]
+        [InlineData("    ")]
+        public async Task JoinGame_WithInvalidGameCode_ThrowsWithGameNotFoundError(string? gameId)
         {
             // Arrange
-            string? gameId = null;
+            SetupNoGameWithHostIdInStore(hostConnectionId);
 
             // Act
             async Task act() => await hub.JoinGame(gameId);
@@ -347,20 +350,8 @@ namespace TheImitationGame.Tests
             // Assert
             var ex = await Assert.ThrowsAsync<GameHubException>(act);
             Assert.Contains(GameHubErrorCode.JoinGame_GameNotFound.ToString(), ex.Message);
-        }
-
-        [Fact]
-        public async Task JoinGame_WithEmptyGameId_ThrowsWithGameNotFoundError()
-        {
-            // Arrange
-            string? gameId = "";
-
-            // Act
-            async Task act() => await hub.JoinGame(gameId);
-
-            // Assert
-            var ex = await Assert.ThrowsAsync<GameHubException>(act);
-            Assert.Contains(GameHubErrorCode.JoinGame_GameNotFound.ToString(), ex.Message);
+            mockClients.VerifyNoOtherCalls();
+            mockGroups.VerifyNoOtherCalls();
         }
 
         [Fact]
@@ -381,22 +372,9 @@ namespace TheImitationGame.Tests
             // Assert
             Assert.NotNull(updatedGame);
             Assert.Equal(GameState.Prompting, updatedGame.State);
-            mockClients.Verify(
-                clients => clients.Client(connectionId).SendCoreAsync(
-                    "PromptTimerStarted",
-                    It.Is<object?[]>(args => args.Length == 1),
-                    default
-                ),
-                Times.Once
-            );
-            mockClients.Verify(
-                clients => clients.Client(joinerConnectionId).SendCoreAsync(
-                    "AwaitPrompt",
-                    It.Is<object?[]>(args => args.Length == 0),
-                    default
-                ),
-                Times.Once
-            );
+            VerifyClientMessaged(connectionId, "PromptTimerStarted", 1, Times.Once);
+            VerifyClientMessaged(joinerConnectionId, "AwaitPrompt", 0, Times.Once);
+            mockClients.VerifyNoOtherCalls();
         }
 
         [Fact]
@@ -417,22 +395,9 @@ namespace TheImitationGame.Tests
             // Assert
             Assert.NotNull(updatedGame);
             Assert.Equal(GameState.Prompting, updatedGame.State);
-            mockClients.Verify(
-                clients => clients.Client(connectionId).SendCoreAsync(
-                    "AwaitPrompt",
-                    It.Is<object?[]>(args => args.Length == 0),
-                    default
-                ),
-                Times.Once
-            );
-            mockClients.Verify(
-                clients => clients.Client(joinerConnectionId).SendCoreAsync(
-                    "PromptTimerStarted",
-                    It.Is<object?[]>(args => args.Length == 1),
-                    default
-                ),
-                Times.Once
-            );
+            VerifyClientMessaged(connectionId, "AwaitPrompt", 0, Times.Once);
+            VerifyClientMessaged(joinerConnectionId, "PromptTimerStarted", 1, Times.Once);
+            mockClients.VerifyNoOtherCalls();
         }
 
         [Fact]
@@ -447,6 +412,7 @@ namespace TheImitationGame.Tests
             // Assert
             var ex = await Assert.ThrowsAsync<GameHubException>(act);
             Assert.Contains(GameHubErrorCode.StartGame_NoGameToStart.ToString(), ex.Message);
+            mockClients.VerifyNoOtherCalls();
         }
 
         [Fact]
@@ -462,6 +428,7 @@ namespace TheImitationGame.Tests
             // Assert
             var ex = await Assert.ThrowsAsync<GameHubException>(act);
             Assert.Contains(GameHubErrorCode.StartGame_NoJoinerInGame.ToString(), ex.Message);
+            mockClients.VerifyNoOtherCalls();
         }
 
         [Fact]
@@ -477,6 +444,7 @@ namespace TheImitationGame.Tests
             // Assert
             var ex = await Assert.ThrowsAsync<GameHubException>(act);
             Assert.Contains(GameHubErrorCode.StartGame_AlreadyStartedGame.ToString(), ex.Message);
+            mockClients.VerifyNoOtherCalls();
         }
 
         [Fact]
@@ -497,22 +465,9 @@ namespace TheImitationGame.Tests
             // Assert
             Assert.NotNull(updatedGame);
             Assert.Equal(GameState.Drawing, updatedGame.State);
-            mockClients.Verify(
-                clients => clients.Client(connectionId).SendCoreAsync(
-                    "AwaitDrawings",
-                    It.Is<object?[]>(args => args.Length == 0),
-                    default
-                ),
-                Times.Once
-            );
-            mockClients.Verify(
-                clients => clients.Client(joinerConnectionId).SendCoreAsync(
-                    "DrawTimerStarted",
-                    It.Is<object?[]>(args => args.Length == 1),
-                    default
-                ),
-                Times.Once
-            );
+            VerifyClientMessaged(connectionId, "AwaitDrawings", 0, Times.Once);
+            VerifyClientMessaged(joinerConnectionId, "DrawTimerStarted", 1, Times.Once);
+            mockClients.VerifyNoOtherCalls();
         }
 
         [Fact]
@@ -533,22 +488,9 @@ namespace TheImitationGame.Tests
             // Assert
             Assert.NotNull(updatedGame);
             Assert.Equal(GameState.Drawing, updatedGame.State);
-            mockClients.Verify(
-                clients => clients.Client(hostConnectionId).SendCoreAsync(
-                    "DrawTimerStarted",
-                    It.Is<object?[]>(args => args.Length == 1),
-                    default
-                ),
-                Times.Once
-            );
-            mockClients.Verify(
-                clients => clients.Client(connectionId).SendCoreAsync(
-                    "AwaitDrawings",
-                    It.Is<object?[]>(args => args.Length == 0),
-                    default
-                ),
-                Times.Once
-            );
+            VerifyClientMessaged(hostConnectionId, "DrawTimerStarted", 1, Times.Once);
+            VerifyClientMessaged(connectionId, "AwaitDrawings", 0, Times.Once);
+            mockClients.VerifyNoOtherCalls();
         }
 
         [Fact]
@@ -566,6 +508,7 @@ namespace TheImitationGame.Tests
             // Assert
             var ex = await Assert.ThrowsAsync<GameHubException>(act);
             Assert.Contains(GameHubErrorCode.SubmitPrompt_NotInAGame.ToString(), ex.Message);
+            mockClients.VerifyNoOtherCalls();
         }
 
         [Fact]
@@ -581,6 +524,7 @@ namespace TheImitationGame.Tests
             // Assert
             var ex = await Assert.ThrowsAsync<GameHubException>(act);
             Assert.Contains(GameHubErrorCode.SubmitPrompt_NotInPromptingPhase.ToString(), ex.Message);
+            mockClients.VerifyNoOtherCalls();
         }
 
         [Fact]
@@ -596,6 +540,7 @@ namespace TheImitationGame.Tests
             // Assert
             var ex = await Assert.ThrowsAsync<GameHubException>(act);
             Assert.Contains(GameHubErrorCode.SubmitPrompt_NotPrompter.ToString(), ex.Message);
+            mockClients.VerifyNoOtherCalls();
         }
 
         [Fact]
@@ -622,23 +567,9 @@ namespace TheImitationGame.Tests
             Assert.Equal(GameState.Guessing, updatedGame.State);
             Assert.NotNull(updatedGame.RealImageIndex);
             Assert.InRange(updatedGame.RealImageIndex.Value, 0, 3);
-
-            mockClients.Verify(
-                clients => clients.Client(connectionId).SendCoreAsync(
-                    "AwaitGuess",
-                    It.Is<object?[]>(args => args.Length == 0),
-                    default
-                ),
-                Times.Once
-            );
-            mockClients.Verify(
-                clients => clients.Client(joinerConnectionId).SendCoreAsync(
-                    "GuessTimerStarted",
-                    It.Is<object?[]>(args => args.Length == 1),
-                    default
-                ),
-                Times.Once
-            );
+            VerifyClientMessaged(connectionId, "AwaitGuess", 0, Times.Once);
+            VerifyClientMessaged(joinerConnectionId, "GuessTimerStarted", 1, Times.Once);
+            mockClients.VerifyNoOtherCalls();
         }
     }
 }

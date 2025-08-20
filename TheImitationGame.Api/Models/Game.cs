@@ -3,9 +3,11 @@
     public enum GameState
     {
         NotStarted,
+
         Prompting,
         Drawing,
-        Guessing
+        Guessing,
+        BetweenRounds,
     }
 
     public enum Role
@@ -21,6 +23,7 @@
         public GameState State { get; set; }
         public string? Prompt { get; set; }
         public Role? Prompter { get; set; }
+        public int MaximumImages { get; set; }
         public int? RealImageIndex { get; set; }
 
         public Game(
@@ -29,6 +32,7 @@
             GameState state = GameState.NotStarted,
             string? prompt = null,
             Role? prompter = null,
+            int maximumImages = 3,
             int? realImageIndex = null)
         {
             HostConnectionId = hostConnectionId;
@@ -36,6 +40,7 @@
             State = state;
             Prompt = prompt;
             Prompter = prompter;
+            MaximumImages = maximumImages;
             RealImageIndex = realImageIndex;
         }
 
@@ -45,6 +50,7 @@
             GameState? state = null,
             string? prompt = null,
             Role? prompter = null,
+            int? maximumImages = null,
             int? realImageIndex = null)
         {
             return new Game(
@@ -53,6 +59,7 @@
                 state ?? State,
                 prompt ?? Prompt,
                 prompter ?? Prompter,
+                maximumImages ?? MaximumImages,
                 realImageIndex ?? RealImageIndex
             );
         }

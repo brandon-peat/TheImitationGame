@@ -128,7 +128,7 @@ namespace TheImitationGame.Api.Hubs
             await Clients.Client(drawer!).SendAsync("AwaitGuess");
 
             // TODO: increment each round
-            int imitationsAmount = 3;
+            int imitationsAmount = game.MaximumImages - 1;
             var imitations = await ImitationGenerator.GenerateImitations(game.Prompt!, image_b64, imitationsAmount);
 
             int insertIndex = Random.Shared.Next(0, imitations.Count + 1);
@@ -140,6 +140,52 @@ namespace TheImitationGame.Api.Hubs
                 throw new GameHubException(GameHubErrorCode.UnknownError);
 
             await Clients.Client(prompter!).SendAsync("GuessTimerStarted", imitations);
+        }
+
+        public async Task SubmitGuess(int guessIndex)
+        {
+            var game = GetGameByMember(Context.ConnectionId)
+                ?? throw new GameHubException(GameHubErrorCode.SubmitGuess_NotInAGame);
+
+            if (game.State != GameState.Guessing)
+                throw new GameHubException(GameHubErrorCode.SubmitGuess_NotInGuessingPhase);
+
+            if (game.Prompter != (Context.ConnectionId == game.HostConnectionId ? Role.Host : Role.Joiner))
+                throw new GameHubException(GameHubErrorCode.SubmitGuess_NotGuesser);
+
+            if (guessIndex > game.MaximumImages - 1 || guessIndex < 0)
+                throw new GameHubException(GameHubErrorCode.SubmitGuess_GuessOutOfRange);
+
+            var prompter = (game.Prompter == Role.Host) ? game.HostConnectionId : game.JoinerConnectionId;
+            var drawer = (game.Prompter == Role.Host) ? game.JoinerConnectionId : game.HostConnectionId;
+
+            bool correctGuess = guessIndex == game.RealImageIndex;
+
+            if (correctGuess) // Continue to the next round with swapped roles and more fakes
+            {
+                Game updatedGame = game.With(
+                    state: GameState.BetweenRounds,
+                    prompt: null,
+                    prompter: (game.Prompter == Role.Host) ? Role.Joiner : Role.Host,
+                    maximumImages: game.MaximumImages + 1,
+                    realImageIndex: null
+                );
+
+                if (!Games.TryUpdate(game.HostConnectionId, updatedGame, game))
+                    throw new GameHubException(GameHubErrorCode.UnknownError);
+
+                await Clients.Client(game.HostConnectionId).SendAsync("CorrectGuess-StartBetweenRoundsPhase");
+                await Clients.Client(game.JoinerConnectionId!).SendAsync("CorrectGuess-AwaitNextRoundStart");
+
+            }
+            else // The game ends
+            {
+                await Clients.Client(prompter!).SendAsync("Incorrect-Lose");
+                await Clients.Client(drawer!).SendAsync("IncorrectGuess-Win", guessIndex);
+
+                await CloseGameWithHost(Context.ConnectionId);
+                await CloseGameWithJoiner(Context.ConnectionId);
+            }
         }
 
         public override async Task OnDisconnectedAsync(Exception? exception)

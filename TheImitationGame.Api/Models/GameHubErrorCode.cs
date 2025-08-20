@@ -22,6 +22,11 @@
         SubmitDrawing_NotInDrawingPhase,
         SubmitDrawing_NotDrawer,
 
+        SubmitGuess_NotInAGame,
+        SubmitGuess_NotInGuessingPhase,
+        SubmitGuess_NotGuesser,
+        SubmitGuess_GuessOutOfRange,
+
         UnknownError
     }
 }

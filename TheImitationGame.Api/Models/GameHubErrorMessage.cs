@@ -24,6 +24,11 @@
             GameHubErrorCode.SubmitDrawing_NotInDrawingPhase => "This game is not in the drawing phase.",
             GameHubErrorCode.SubmitDrawing_NotDrawer => "You are not currently the drawer for this game.",
 
+            GameHubErrorCode.SubmitGuess_NotInAGame => "You are not in a game.",
+            GameHubErrorCode.SubmitGuess_NotInGuessingPhase => "This is not in the guessing phase.",
+            GameHubErrorCode.SubmitGuess_NotGuesser => "You are not currently the prompter (guesser) for this game.",
+            GameHubErrorCode.SubmitGuess_GuessOutOfRange => "That value is not in a valid range.",
+
             GameHubErrorCode.UnknownError => "An unknown error occurred.",
             _ => "An unknown error occurred."
         };

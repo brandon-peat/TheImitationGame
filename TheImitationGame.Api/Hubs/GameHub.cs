@@ -125,21 +125,27 @@ namespace TheImitationGame.Api.Hubs
             var prompter = (game.Prompter == Role.Host) ? game.HostConnectionId : game.JoinerConnectionId;
             var drawer = (game.Prompter == Role.Host) ? game.JoinerConnectionId : game.HostConnectionId;
 
-            await Clients.Client(drawer!).SendAsync("AwaitGuess");
+            await Clients.Client(drawer!).SendAsync("AwaitImitations");
+            await Clients.Client(prompter!).SendAsync("AwaitImitations");
 
             // TODO: increment each round
             int imitationsAmount = game.MaximumImages - 1;
             var imitations = await ImitationGenerator.GenerateImitations(game.Prompt!, image_b64, imitationsAmount);
 
+            var imagesRandom = imitations;
             int insertIndex = Random.Shared.Next(0, imitations.Count + 1);
-            imitations.Insert(insertIndex, image_b64);
+            imagesRandom.Insert(insertIndex, image_b64);
+
+            var imagesWithRealFirst = imitations;
+            imagesWithRealFirst.Insert(0, image_b64);
 
             var updatedGame = game.With(state: GameState.Guessing, realImageIndex: insertIndex);
 
             if (!Games.TryUpdate(game.HostConnectionId, updatedGame, game))
                 throw new GameHubException(GameHubErrorCode.UnknownError);
 
-            await Clients.Client(prompter!).SendAsync("GuessTimerStarted", imitations);
+            await Clients.Client(drawer!).SendAsync("AwaitGuess", imagesWithRealFirst);
+            await Clients.Client(prompter!).SendAsync("GuessTimerStarted", imagesRandom);
         }
 
         public async Task SubmitGuess(int guessIndex)
@@ -180,7 +186,7 @@ namespace TheImitationGame.Api.Hubs
             }
             else // The game ends
             {
-                await Clients.Client(prompter!).SendAsync("Incorrect-Lose");
+                await Clients.Client(prompter!).SendAsync("IncorrectGuess-Lose");
                 await Clients.Client(drawer!).SendAsync("IncorrectGuess-Win", guessIndex);
 
                 await CloseGameWithHost(Context.ConnectionId);

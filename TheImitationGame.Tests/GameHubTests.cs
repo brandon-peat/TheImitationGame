@@ -544,7 +544,7 @@ namespace TheImitationGame.Tests
         }
 
         [Fact]
-        public async Task SubmitDrawing_WithHostAsDrawer_SetsGameStateToGuessingAndSetsRealImageIndexAndNotifiesPlayers()
+        public async Task SubmitDrawing_WithHostAsDrawer_SetsGameStateAndRealImageIndexAndNotifiesPlayers()
         {
             // Arrange
             Game game = new(connectionId, joinerConnectionId, GameState.Drawing, prompt, Role.Joiner);
@@ -567,7 +567,9 @@ namespace TheImitationGame.Tests
             Assert.Equal(GameState.Guessing, updatedGame.State);
             Assert.NotNull(updatedGame.RealImageIndex);
             Assert.InRange(updatedGame.RealImageIndex.Value, 0, 3);
-            VerifyClientMessaged(connectionId, "AwaitGuess", 0, Times.Once);
+            VerifyClientMessaged(connectionId, "AwaitImitations", 0, Times.Once);
+            VerifyClientMessaged(joinerConnectionId, "AwaitImitations", 0, Times.Once);
+            VerifyClientMessaged(connectionId, "AwaitGuess", 1, Times.Once);
             VerifyClientMessaged(joinerConnectionId, "GuessTimerStarted", 1, Times.Once);
             mockClients.VerifyNoOtherCalls();
         }

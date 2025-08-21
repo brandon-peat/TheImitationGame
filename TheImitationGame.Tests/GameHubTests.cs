@@ -573,5 +573,86 @@ namespace TheImitationGame.Tests
             VerifyClientMessaged(joinerConnectionId, "GuessTimerStarted", 1, Times.Once);
             mockClients.VerifyNoOtherCalls();
         }
+
+        [Fact]
+        public async Task SubmitDrawing_WithJoinerAsDrawer_SetsGameStateAndRealImageIndexAndNotifiesPlayers()
+        {
+            // Arrange
+            Game game = new(hostConnectionId, connectionId, GameState.Drawing, prompt, Role.Host);
+            SetupGameInStore(game);
+            Game? updatedGame = null;
+            SetupTryUpdateCallback(
+                hostConnectionId,
+                g => updatedGame = g
+            );
+
+            mockImitationGenerator
+                .Setup(gen => gen.GenerateImitations(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>()))
+                .ReturnsAsync(["image1", "image2", "image3"]);
+
+            // Act
+            await hub.SubmitDrawing(mockB64String);
+
+            // Assert
+            Assert.NotNull(updatedGame);
+            Assert.Equal(GameState.Guessing, updatedGame.State);
+            Assert.NotNull(updatedGame.RealImageIndex);
+            Assert.InRange(updatedGame.RealImageIndex.Value, 0, 3);
+            VerifyClientMessaged(connectionId, "AwaitImitations", 0, Times.Once);
+            VerifyClientMessaged(hostConnectionId, "AwaitImitations", 0, Times.Once);
+            VerifyClientMessaged(connectionId, "AwaitGuess", 1, Times.Once);
+            VerifyClientMessaged(hostConnectionId, "GuessTimerStarted", 1, Times.Once);
+            mockClients.VerifyNoOtherCalls();
+        }
+
+        [Fact]
+        public async Task SubmitDrawing_WhenNotInGame_ThrowsWithNotInAGameError()
+        {
+            // Arrange
+            SetupNoGameWithHostIdInStore(connectionId);
+            mockGamesStore
+                .Setup(games => games.FirstOrDefault(It.IsAny<Func<KeyValuePair<string, Game>, bool>>()))
+                .Returns(default(KeyValuePair<string, Game>));
+
+            // Act
+            async Task act() => await hub.SubmitDrawing(mockB64String);
+
+            // Assert
+            var ex = await Assert.ThrowsAsync<GameHubException>(act);
+            Assert.Contains(GameHubErrorCode.SubmitDrawing_NotInAGame.ToString(), ex.Message);
+            mockClients.VerifyNoOtherCalls();
+        }
+
+        [Fact]
+        public async Task SubmitDrawing_WhenNotInDrawingPhase_ThrowsWithNotInDrawingPhaseError()
+        {
+            // Arrange
+            Game game = new(connectionId, joinerConnectionId, GameState.NotStarted);
+            SetupGameInStore(game);
+
+            // Act
+            async Task act() => await hub.SubmitDrawing(mockB64String);
+
+            // Assert
+            var ex = await Assert.ThrowsAsync<GameHubException>(act);
+            Assert.Contains(GameHubErrorCode.SubmitDrawing_NotInDrawingPhase.ToString(), ex.Message);
+            mockClients.VerifyNoOtherCalls();
+        }
+
+        [Fact]
+        public async Task SubmitDrawing_WhenNotDrawer_ThrowsWithNotDrawerError()
+        {
+            // Arrange
+            Game game = new(connectionId, joinerConnectionId, GameState.Drawing, prompt, prompter: Role.Host);
+            SetupGameInStore(game);
+
+            // Act
+            async Task act() => await hub.SubmitDrawing(mockB64String);
+
+            // Assert
+            var ex = await Assert.ThrowsAsync<GameHubException>(act);
+            Assert.Contains(GameHubErrorCode.SubmitDrawing_NotDrawer.ToString(), ex.Message);
+            mockClients.VerifyNoOtherCalls();
+        }
     }
 }

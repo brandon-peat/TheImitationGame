@@ -10,13 +10,16 @@ function Draw({connectionReady}: {connectionReady: boolean}) {
   const [awaitingPrompt, setAwaitingPrompt] = useState(true);
   const [awaitingGuess, setAwaitingGuess] = useState(false);
   const [prompt, setPrompt] = useState<string>('');
+  const [realImage, setRealImage] = useState<string>('');
+  const [imitations, setImitations] = useState<string[]>([]);
+  const [submitDisabled, setSubmitDisabled] = useState(false);
 
   const handleSubmitDrawing = async (imageDataUrl: string) => {
     const rawImageB64 = imageDataUrl.replace(/^data:image\/jpeg;base64,/, '');
     await connection.invoke('SubmitDrawing', rawImageB64)
-    .catch((error) => {
-      console.error('Error submitting drawing:', error);
-    });
+      .catch((error) => {
+        console.error('Error submitting drawing:', error);
+      });
   }
 
   useEffect(() => {
@@ -28,13 +31,23 @@ function Draw({connectionReady}: {connectionReady: boolean}) {
     }
     connection.on('DrawTimerStarted', handleDrawTimerStarted);
 
-    const handleAwaitGuess = () => {
+    const handleAwaitGuess = (images: string[]) => {
       setAwaitingGuess(true);
+      const [real, ...imitations] = images;
+      setRealImage(real);
+      setImitations(imitations);
     }
     connection.on('AwaitGuess', handleAwaitGuess);
 
+    const handleAwaitImitations = () => {
+      setSubmitDisabled(true);
+    }
+    connection.on('AwaitImitations', handleAwaitImitations);
+
     return () => {
       connection.off('DrawTimerStarted', handleDrawTimerStarted);
+      connection.off('AwaitGuess', handleAwaitGuess);
+      connection.off('AwaitImitations', handleAwaitImitations);
     }
   }, []);
 
@@ -45,9 +58,32 @@ function Draw({connectionReady}: {connectionReady: boolean}) {
       </Typography>
     ) : (
       awaitingGuess ? (
-        <Typography variant='subtitle1' sx={{ textAlign: 'center' }}>
-          Your opponent has received your drawing along with the AI imitations and is now guessing.
-        </Typography>
+        <>
+          <Typography variant='subtitle1' sx={{ textAlign: 'center' }}>
+            Your opponent has received the following images and is now guessing.
+          </Typography>
+
+          <Typography variant='subtitle2' sx={{ textAlign: 'center' }}>
+            Your drawing:
+          </Typography>
+
+          <img
+            src={`data:image/jpeg;base64,${realImage}`}
+            className='w-[512px] h-[512px] rounded-2xl shadow-xl' />
+
+          <Typography variant='subtitle2' sx={{ textAlign: 'center' }}>
+            AI imitations: 
+          </Typography>
+
+          <div className='flex flex-wrap justify-center gap-4'>
+            {imitations.map((image) => (
+              <img
+                src={`data:image/jpeg;base64,${image}`}
+                className='w-[512px] h-[512px] rounded-2xl shadow-xl'
+              />
+            ))}
+          </div>
+        </>
       ) : (
         <>
           <div>
@@ -60,7 +96,10 @@ function Draw({connectionReady}: {connectionReady: boolean}) {
             </Typography>
           </div>
 
-          <Canvas onSubmitDrawing={handleSubmitDrawing} />
+          <Canvas 
+            onSubmitDrawing={handleSubmitDrawing}
+            submitDisabled={submitDisabled}
+          />
         </>
       )
     )

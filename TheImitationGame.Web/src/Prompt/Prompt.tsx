@@ -11,8 +11,6 @@ function Prompt({connectionReady}: {connectionReady: boolean}) {
   const [prompt, setPrompt] = useState<string>(defaultPrompt);
   const [promptSent, setPromptSent] = useState(false);
 
-  
-
   useEffect(() => {
     if(!connectionReady || !defaultPrompt) navigate('/');
 
@@ -21,14 +19,14 @@ function Prompt({connectionReady}: {connectionReady: boolean}) {
     };
     connection.on('AwaitDrawings', handleAwaitDrawings);
 
-    const handleGuessTimerStarted = (images: string[]) => {
-      navigate('/guess', {state: {images}});
+    const handleAwaitImitations = () => {
+      navigate('/guess');
     }
-    connection.on('GuessTimerStarted', handleGuessTimerStarted);
+    connection.on('AwaitImitations', handleAwaitImitations);
 
     return () => {
       connection.off('AwaitDrawings', handleAwaitDrawings);
-      connection.off('GuessTimerStarted', handleGuessTimerStarted);
+      connection.off('AwaitImitations', handleAwaitImitations);
     }
   }, []);
 

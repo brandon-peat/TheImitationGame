@@ -7,7 +7,11 @@ import { Button, IconButton } from '@mui/material';
 import { useRef, useState } from 'react';
 import { ReactSketchCanvas, type ReactSketchCanvasRef } from 'react-sketch-canvas';
 
-function Canvas({ onSubmitDrawing }: { onSubmitDrawing: (imageDataUrl: string) => void }) {
+type CanvasProps = {
+  onSubmitDrawing: (imageDataUrl: string) => void;
+  submitDisabled: boolean;
+};
+function Canvas({ onSubmitDrawing, submitDisabled }: CanvasProps) {
   const canvasRef = useRef<ReactSketchCanvasRef>(null);
   const [eraseMode, setEraseMode] = useState(false);
 
@@ -32,6 +36,7 @@ function Canvas({ onSubmitDrawing }: { onSubmitDrawing: (imageDataUrl: string) =
           variant='contained'
           color='primary'
           onClick={handleSubmitClick}
+          disabled={submitDisabled}
         >
           Submit Drawing
         </Button>

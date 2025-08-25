@@ -1,20 +1,34 @@
 import { Button, Typography } from "@mui/material";
 import { useEffect, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import connection from "../../signalr-connection";
 
 function Guess({connectionReady}: {connectionReady: boolean}) {
   const navigate = useNavigate();
-  const location = useLocation();
 
-  const images = location.state?.images as string[];
+  const [images, setImages] = useState<string[]>([]);
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
 
   useEffect(() => {
-    if(!connectionReady || !images) navigate('/');
+    if(!connectionReady) navigate('/');
+
+    const handleGuessTimerStarted = (images: string[]) => {
+      setImages(images);
+    }
+    connection.on('GuessTimerStarted', handleGuessTimerStarted);
+    
+    return () => {
+      connection.off('GuessTimerStarted', handleGuessTimerStarted);
+    }
   }, []);
 
   return (
-    <>
+    (images.length === 0) ? (
+      <Typography variant='subtitle1' sx={{ textAlign: 'center' }}>
+        AI is generating imitations . . .
+      </Typography>
+    ) : (
+      <>
         <Typography variant='subtitle1' sx={{ textAlign: 'center' }}>
           One of these is the real drawing, and the rest are AI imitations.
           Select the one you think is real and submit your guess.
@@ -48,6 +62,7 @@ function Guess({connectionReady}: {connectionReady: boolean}) {
           Submit Guess
         </Button>
       </>
+    )
   )
 }
 

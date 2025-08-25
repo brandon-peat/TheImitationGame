@@ -32,7 +32,7 @@
             GameState state = GameState.NotStarted,
             string? prompt = null,
             Role? prompter = null,
-            int maximumImages = 3,
+            int maximumImages = 4,
             int? realImageIndex = null)
         {
             HostConnectionId = hostConnectionId;

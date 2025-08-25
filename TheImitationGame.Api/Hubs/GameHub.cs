@@ -132,11 +132,11 @@ namespace TheImitationGame.Api.Hubs
             int imitationsAmount = game.MaximumImages - 1;
             var imitations = await ImitationGenerator.GenerateImitations(game.Prompt!, image_b64, imitationsAmount);
 
-            var imagesRandom = imitations;
+            var imagesRandom = new List<string>(imitations);
             int insertIndex = Random.Shared.Next(0, imitations.Count + 1);
             imagesRandom.Insert(insertIndex, image_b64);
 
-            var imagesWithRealFirst = imitations;
+            var imagesWithRealFirst = new List<string>(imitations);
             imagesWithRealFirst.Insert(0, image_b64);
 
             var updatedGame = game.With(state: GameState.Guessing, realImageIndex: insertIndex);

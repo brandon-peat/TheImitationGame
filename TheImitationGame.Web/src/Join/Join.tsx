@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import connection from '../signalr-connection';
 import { JoinGameErrorCodes } from './JoinGameErrorCode';
 
-function Join({connectionReady}: {connectionReady: boolean}) {
+function Join() {
   const [joinResultMessage, setJoinResultMessage] = useState<string>('');
   const [gameJoined, setGameJoined] = useState<boolean>(false);
 
@@ -13,8 +13,6 @@ function Join({connectionReady}: {connectionReady: boolean}) {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!connectionReady) return;
-
     const handleGameStartedAsPrompter = (defaultPrompt: string) => {
       navigatingInternally.current = true;
       navigate('/prompt', { state: { defaultPrompt } });
@@ -31,7 +29,7 @@ function Join({connectionReady}: {connectionReady: boolean}) {
       connection.off('PromptTimerStarted', handleGameStartedAsPrompter);
       connection.off('AwaitPrompt', handleGameStartedAsDrawer);
     }
-  }, [connectionReady]);
+  }, []);
 
   const submitGameCode = async (gameCode: string) => {
     if (!gameCode) return;

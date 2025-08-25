@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import connection from '../signalr-connection';
 
-function Prompt({connectionReady}: {connectionReady: boolean}) {
+function Prompt() {
   const navigate = useNavigate();
   const location = useLocation();
   const defaultPrompt = location.state?.defaultPrompt;
@@ -12,7 +12,7 @@ function Prompt({connectionReady}: {connectionReady: boolean}) {
   const [promptSent, setPromptSent] = useState(false);
 
   useEffect(() => {
-    if(!connectionReady || !defaultPrompt) navigate('/');
+    if(!defaultPrompt) navigate('/');
 
     const handleAwaitDrawings = () => {
       setPromptSent(true);

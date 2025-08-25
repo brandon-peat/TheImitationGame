@@ -10,7 +10,6 @@ import Guess from './Prompt/Guess/Guess';
 import Prompt from './Prompt/Prompt';
 import connection from './signalr-connection';
 
-
 function App() {
   const [connectionReady, setConnectionReady] = useState(false);
   const [message, setMessage] = useState('');
@@ -47,7 +46,10 @@ function App() {
   }, [navigationType]);
 
   useEffect(() => {
-    if(location.pathname !== '/') setMessage('');
+    if(location.pathname !== '/') {
+      setMessage('');
+      if(!connectionReady) navigate('/');
+    }
   }, [location.pathname]);
 
   return (
@@ -67,11 +69,11 @@ function App() {
 
       <Routes>
         <Route path = '/' element={<Home />} />
-        <Route path = '/host' element={<Host connectionReady={connectionReady} />} />
-        <Route path = '/join' element={<Join connectionReady={connectionReady} />} />
-        <Route path = '/prompt' element={<Prompt connectionReady={connectionReady} />} />
-        <Route path='/guess' element={<Guess connectionReady={connectionReady} />} />
-        <Route path = '/draw' element={<Draw connectionReady={connectionReady} />} />
+        <Route path = '/host' element={<Host />} />
+        <Route path = '/join' element={<Join />} />
+        <Route path = '/prompt' element={<Prompt />} />
+        <Route path='/guess' element={<Guess />} />
+        <Route path = '/draw' element={<Draw />} />
       </Routes>
 
       {message && (

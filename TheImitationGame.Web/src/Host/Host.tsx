@@ -8,7 +8,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import connection from '../signalr-connection';
 
-function Host({connectionReady}: {connectionReady: boolean}) {
+function Host() {
   const [gameCode, setGameCode] = useState<string>('');
   const [gameJoined, setGameJoined] = useState<boolean>(false);
   const [firstPlayer, setFirstPlayer] = useState<'Me' | 'Opponent' | 'Random'>('Me');
@@ -17,8 +17,6 @@ function Host({connectionReady}: {connectionReady: boolean}) {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!connectionReady) return;
-
     const createGame = async () => {
       connection.invoke<string>('CreateGame')
         .then((code) => setGameCode(code))
@@ -49,7 +47,7 @@ function Host({connectionReady}: {connectionReady: boolean}) {
       connection.off('PromptTimerStarted', handleGameStartedAsPrompter);
       connection.off('AwaitPrompt', handleGameStartedAsDrawer);
     }
-  }, [connectionReady]);
+  }, []);
 
   return (
     <div className='mode-area'>

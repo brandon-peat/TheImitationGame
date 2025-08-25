@@ -1,17 +1,12 @@
 import { Button, Typography } from "@mui/material";
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import connection from "../../signalr-connection";
 
-function Guess({connectionReady}: {connectionReady: boolean}) {
-  const navigate = useNavigate();
-
+function Guess() {
   const [images, setImages] = useState<string[]>([]);
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
 
   useEffect(() => {
-    if(!connectionReady) navigate('/');
-
     const handleGuessTimerStarted = (images: string[]) => {
       setImages(images);
     }
@@ -44,7 +39,7 @@ function Guess({connectionReady}: {connectionReady: boolean}) {
                 src={`data:image/jpeg;base64,${image}`}
                 className={
                   `w-[512px] h-[512px] rounded-2xl transition duration-300
-                  ${isSelected ? "ring-4 ring-blue-500 shadow-xl" : "hover:shadow-2xl cursor-pointer"}`
+                  ${isSelected ? 'ring-4 ring-blue-500 shadow-xl' : 'hover:shadow-2xl cursor-pointer'}`
                 }
               />
             );

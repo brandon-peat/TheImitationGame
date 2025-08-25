@@ -6,6 +6,7 @@ import Draw from './Draw/Draw';
 import Home from './Home/Home';
 import Host from './Host/Host';
 import Join from './Join/Join';
+import Guess from './Prompt/Guess/Guess';
 import Prompt from './Prompt/Prompt';
 import connection from './signalr-connection';
 
@@ -69,6 +70,7 @@ function App() {
         <Route path = '/host' element={<Host connectionReady={connectionReady} />} />
         <Route path = '/join' element={<Join connectionReady={connectionReady} />} />
         <Route path = '/prompt' element={<Prompt connectionReady={connectionReady} />} />
+        <Route path='/guess' element={<Guess connectionReady={connectionReady} />} />
         <Route path = '/draw' element={<Draw connectionReady={connectionReady} />} />
       </Routes>
 

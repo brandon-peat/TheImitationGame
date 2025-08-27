@@ -14,10 +14,12 @@ type CanvasProps = {
 function Canvas({ onSubmitDrawing, submitDisabled }: CanvasProps) {
   const canvasRef = useRef<ReactSketchCanvasRef>(null);
   const [eraseMode, setEraseMode] = useState(false);
+  const [submitClicked, setSubmitClicked] = useState(false);
 
   async function handleSubmitClick() {
     if (canvasRef.current) {
       const imageDataUrl = await canvasRef.current.exportImage('jpeg');
+      setSubmitClicked(true);
       onSubmitDrawing(imageDataUrl);
     }
   }
@@ -38,7 +40,7 @@ function Canvas({ onSubmitDrawing, submitDisabled }: CanvasProps) {
           onClick={handleSubmitClick}
           disabled={submitDisabled}
         >
-          Submit Drawing
+          {submitClicked ? 'AI is generating imitations . . .' : 'Submit Drawing'}
         </Button>
       </div>
 

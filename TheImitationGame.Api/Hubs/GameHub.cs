@@ -186,7 +186,7 @@ namespace TheImitationGame.Api.Hubs
             }
             else // The game ends
             {
-                await Clients.Client(prompter!).SendAsync("IncorrectGuess-Lose");
+                await Clients.Client(prompter!).SendAsync("IncorrectGuess-Lose", game.RealImageIndex);
                 await Clients.Client(drawer!).SendAsync("IncorrectGuess-Win", guessIndex);
 
                 await CloseGameWithHost(Context.ConnectionId);

@@ -1,10 +1,14 @@
 import { Button, Typography } from "@mui/material";
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import connection from "../../signalr-connection";
 
 function Guess() {
+  const navigate = useNavigate();
+
   const [images, setImages] = useState<string[]>([]);
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
+  const [guessSubmitted, setGuessSubmitted] = useState(false);
 
   useEffect(() => {
     const handleGuessTimerStarted = (images: string[]) => {
@@ -16,6 +20,19 @@ function Guess() {
       connection.off('GuessTimerStarted', handleGuessTimerStarted);
     }
   }, []);
+
+  useEffect(() => {
+    const handleLose = (realImageIndex: number) => {
+      var selectedImage = images[selectedImageIndex!];
+      var realImage = images[realImageIndex];
+      navigate('/lose', {state: {selectedImage, realImage}});
+    }
+    connection.on('IncorrectGuess-Lose', handleLose);
+
+    return () => {
+      connection.off('IncorrectGuess-Lose', handleLose);
+    }
+  }, [images, selectedImageIndex]);
 
   return (
     (images.length === 0) ? (
@@ -49,9 +66,13 @@ function Guess() {
         <Button
           variant='contained'
           color='primary'
-          disabled={selectedImageIndex === null}
+          disabled={selectedImageIndex === null || guessSubmitted}
           onClick={() => {
-
+            setGuessSubmitted(true);
+            connection.invoke('SubmitGuess', selectedImageIndex)
+              .catch((error) => {
+                console.error('Error submitting guess:', error);
+              });
           }}
         >
           Submit Guess

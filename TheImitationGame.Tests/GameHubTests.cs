@@ -569,7 +569,7 @@ namespace TheImitationGame.Tests
             Assert.InRange(updatedGame.RealImageIndex.Value, 0, 3);
             VerifyClientMessaged(connectionId, "AwaitImitations", 0, Times.Once);
             VerifyClientMessaged(joinerConnectionId, "AwaitImitations", 0, Times.Once);
-            VerifyClientMessaged(connectionId, "AwaitGuess", 1, Times.Once);
+            VerifyClientMessaged(connectionId, "AwaitGuess", 2, Times.Once);
             VerifyClientMessaged(joinerConnectionId, "GuessTimerStarted", 1, Times.Once);
             mockClients.VerifyNoOtherCalls();
         }
@@ -600,7 +600,7 @@ namespace TheImitationGame.Tests
             Assert.InRange(updatedGame.RealImageIndex.Value, 0, 3);
             VerifyClientMessaged(connectionId, "AwaitImitations", 0, Times.Once);
             VerifyClientMessaged(hostConnectionId, "AwaitImitations", 0, Times.Once);
-            VerifyClientMessaged(connectionId, "AwaitGuess", 1, Times.Once);
+            VerifyClientMessaged(connectionId, "AwaitGuess", 2, Times.Once);
             VerifyClientMessaged(hostConnectionId, "GuessTimerStarted", 1, Times.Once);
             mockClients.VerifyNoOtherCalls();
         }

@@ -136,15 +136,12 @@ namespace TheImitationGame.Api.Hubs
             int insertIndex = Random.Shared.Next(0, imitations.Count + 1);
             imagesRandom.Insert(insertIndex, image_b64);
 
-            var imagesWithRealFirst = new List<string>(imitations);
-            imagesWithRealFirst.Insert(0, image_b64);
-
             var updatedGame = game.With(state: GameState.Guessing, realImageIndex: insertIndex);
 
             if (!Games.TryUpdate(game.HostConnectionId, updatedGame, game))
                 throw new GameHubException(GameHubErrorCode.UnknownError);
 
-            await Clients.Client(drawer!).SendAsync("AwaitGuess", imagesWithRealFirst);
+            await Clients.Client(drawer!).SendAsync("AwaitGuess", imagesRandom, insertIndex);
             await Clients.Client(prompter!).SendAsync("GuessTimerStarted", imagesRandom);
         }
 
@@ -182,15 +179,16 @@ namespace TheImitationGame.Api.Hubs
 
                 await Clients.Client(game.HostConnectionId).SendAsync("CorrectGuess-StartBetweenRoundsPhase");
                 await Clients.Client(game.JoinerConnectionId!).SendAsync("CorrectGuess-AwaitNextRoundStart");
-
             }
             else // The game ends
             {
                 await Clients.Client(prompter!).SendAsync("IncorrectGuess-Lose", game.RealImageIndex);
                 await Clients.Client(drawer!).SendAsync("IncorrectGuess-Win", guessIndex);
 
-                await CloseGameWithHost(Context.ConnectionId);
-                await CloseGameWithJoiner(Context.ConnectionId);
+                if (game.Prompter == Role.Host)
+                    await CloseGameWithHost(Context.ConnectionId, notifyJoiner: false);
+                else if (game.Prompter == Role.Joiner)
+                    await CloseGameWithJoiner(Context.ConnectionId, notifyHost: false);
             }
         }
 
@@ -202,7 +200,7 @@ namespace TheImitationGame.Api.Hubs
             await base.OnDisconnectedAsync(exception);
         }
         
-        async Task CloseGameWithHost(string host)
+        async Task CloseGameWithHost(string host, bool notifyJoiner = true)
         {
             if (Games.TryRemove(host, out Game? game))
             {
@@ -211,12 +209,13 @@ namespace TheImitationGame.Api.Hubs
                 if (joiner != null)
                 {
                     await Groups.RemoveFromGroupAsync(joiner, host);
-                    await Clients.Client(joiner).SendAsync("HostLeft");
+                    if (notifyJoiner)
+                        await Clients.Client(joiner).SendAsync("HostLeft");
                 }
             }
         }
 
-        async Task CloseGameWithJoiner(string joiner)
+        async Task CloseGameWithJoiner(string joiner, bool notifyHost = true)
         {
             var joinedGame = Games.FirstOrDefault(kvp => kvp.Value?.JoinerConnectionId == joiner);
             if (!joinedGame.Equals(default(KeyValuePair<string, Game>)))
@@ -225,7 +224,8 @@ namespace TheImitationGame.Api.Hubs
                 Games.TryRemove(host, out _);
                 await Groups.RemoveFromGroupAsync(host, host);
                 await Groups.RemoveFromGroupAsync(joiner, host);
-                await Clients.Client(host).SendAsync("JoinerLeft");
+                if (notifyHost)
+                    await Clients.Client(host).SendAsync("JoinerLeft");
             }
         }
 

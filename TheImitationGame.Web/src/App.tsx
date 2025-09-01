@@ -9,7 +9,7 @@ import Join from './Join/Join';
 import Guess from './Prompt/Guess/Guess';
 import Prompt from './Prompt/Prompt';
 import connection from './signalr-connection';
-import Lose from './Prompt/Guess/Lose/Lose';
+import End from './End/End';
 
 function App() {
   const [connectionReady, setConnectionReady] = useState(false);
@@ -69,13 +69,13 @@ function App() {
       </Typography>
 
       <Routes>
-        <Route path = '/' element={<Home />} />
-        <Route path = '/host' element={<Host />} />
-        <Route path = '/join' element={<Join />} />
-        <Route path = '/prompt' element={<Prompt />} />
+        <Route path='/' element={<Home />} />
+        <Route path='/host' element={<Host />} />
+        <Route path='/join' element={<Join />} />
+        <Route path='/prompt' element={<Prompt />} />
         <Route path='/guess' element={<Guess />} />
-        <Route path = '/draw' element={<Draw />} />
-        <Route path = '/lose' element={<Lose />} />
+        <Route path='/draw' element={<Draw />} />
+        <Route path='/end' element={<End />} />
       </Routes>
 
       {message && (

@@ -23,9 +23,9 @@ function Guess() {
 
   useEffect(() => {
     const handleLose = (realImageIndex: number) => {
-      var selectedImage = images[selectedImageIndex!];
+      var wrongImage = images[selectedImageIndex!];
       var realImage = images[realImageIndex];
-      navigate('/lose', {state: {selectedImage, realImage}});
+      navigate('/end', {state: {won: false, wrongImage, realImage}});
     }
     connection.on('IncorrectGuess-Lose', handleLose);
 

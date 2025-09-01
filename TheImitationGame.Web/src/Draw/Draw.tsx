@@ -1,13 +1,17 @@
 import Typography from '@mui/material/Typography';
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import connection from '../signalr-connection';
 import Canvas from './Canvas/Canvas';
 
 function Draw() {
+  const navigate = useNavigate();
+
   const [awaitingPrompt, setAwaitingPrompt] = useState(true);
   const [awaitingGuess, setAwaitingGuess] = useState(false);
   const [prompt, setPrompt] = useState<string>('');
   const [realImage, setRealImage] = useState<string>('');
+  const [realImageIndex, setRealImageIndex] = useState<number>(-1);
   const [imitations, setImitations] = useState<string[]>([]);
   const [submitDisabled, setSubmitDisabled] = useState(false);
 
@@ -26,11 +30,11 @@ function Draw() {
     }
     connection.on('DrawTimerStarted', handleDrawTimerStarted);
 
-    const handleAwaitGuess = (images: string[]) => {
+    const handleAwaitGuess = (images: string[], realImageIndex: number) => {
       setAwaitingGuess(true);
-      const [real, ...imitations] = images;
-      setRealImage(real);
-      setImitations(imitations);
+      setRealImageIndex(realImageIndex);
+      setRealImage(images[realImageIndex]);
+      setImitations(images);
     }
     connection.on('AwaitGuess', handleAwaitGuess);
 
@@ -45,6 +49,18 @@ function Draw() {
       connection.off('AwaitImitations', handleAwaitImitations);
     }
   }, []);
+
+  useEffect(() => {
+    const handleWin = (guessIndex: number) => {
+      var wrongImage = imitations[guessIndex];
+      navigate('/end', {state: {won: true, wrongImage, realImage}});
+    }
+    connection.on('IncorrectGuess-Win', handleWin);
+
+    return () => {
+      connection.off('IncorrectGuess-Win', handleWin);
+    }
+  }, [imitations, realImage]);
 
   return (
     awaitingPrompt ? (
@@ -71,11 +87,13 @@ function Draw() {
           </Typography>
 
           <div className='flex flex-wrap justify-center gap-4'>
-            {imitations.map((image) => (
-              <img
-                src={`data:image/jpeg;base64,${image}`}
-                className='w-[512px] h-[512px] rounded-2xl shadow-xl'
-              />
+            {imitations.map((image, i) => (
+              i === realImageIndex ? null : (
+                <img
+                  src={`data:image/jpeg;base64,${image}`}
+                  className='w-[512px] h-[512px] rounded-2xl shadow-xl'
+                />
+              )
             ))}
           </div>
         </>
@@ -98,7 +116,6 @@ function Draw() {
         </>
       )
     )
-      
   );
 }
 

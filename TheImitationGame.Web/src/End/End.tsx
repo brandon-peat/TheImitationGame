@@ -2,25 +2,28 @@ import { Button, Typography } from "@mui/material";
 import { useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
-function Lose() {
+function End() {
   const navigate = useNavigate();
   const location = useLocation();
-  const selectedImage = location.state?.selectedImage;
+
+  const won = location.state?.won;
+  const wrongImage = location.state?.wrongImage;
   const realImage = location.state?.realImage;
 
   useEffect(() => {
-    if(!selectedImage || !realImage) navigate('/');
+    console.log(won, wrongImage, realImage);
+    if(!wrongImage || !realImage || won == null) navigate('/');
   }, []);
 
   return (
     <>
       <Typography variant='h5'>
-        You lose!
+        {won ? 'You win!' : 'You lose!'}
       </Typography>
 
       <div className='flex gap-8 flex-wrap'>
         <img
-          src={`data:image/jpeg;base64,${selectedImage}`}
+          src={`data:image/jpeg;base64,${wrongImage}`}
           className='w-[512px] h-[512px] rounded-2xl ring-4 ring-red-500 shadow-xl'
         />
 
@@ -31,7 +34,10 @@ function Lose() {
       </div>
 
       <Typography variant='subtitle1'>
-        Your guess (red) was incorrect. Your opponent's drawing (green) is the real one.
+        {won ? 'Their ' : 'Your '}
+        guess (red) was incorrect.
+        {won ? ' Your ' : " Your opponent's "}
+        drawing (green) is the real one.
       </Typography>
 
       <Button color='primary' variant='contained' onClick={() => navigate('/')}>
@@ -41,4 +47,4 @@ function Lose() {
   );
 }
 
-export default Lose;
+export default End;

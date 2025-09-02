@@ -4,7 +4,7 @@ import FormControlLabel from '@mui/material/FormControlLabel';
 import FormLabel from '@mui/material/FormLabel';
 import Radio from '@mui/material/Radio';
 import RadioGroup from '@mui/material/RadioGroup';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import connection from '../signalr-connection';
 
@@ -13,7 +13,6 @@ function Host() {
   const [gameJoined, setGameJoined] = useState<boolean>(false);
   const [firstPlayer, setFirstPlayer] = useState<'Me' | 'Opponent' | 'Random'>('Me');
 
-  const navigatingInternally = useRef(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -31,13 +30,11 @@ function Host() {
     connection.on('GameJoined', handleGameJoined);
 
     function handleGameStartedAsPrompter(defaultPrompt: string) {
-      navigatingInternally.current = true;
       navigate('/prompt', { state: { defaultPrompt } });
     }
     connection.on('PromptTimerStarted', handleGameStartedAsPrompter);
 
     const handleGameStartedAsDrawer = () => {
-      navigatingInternally.current = true;
       navigate('/draw');
     }
     connection.on('AwaitPrompt', handleGameStartedAsDrawer);

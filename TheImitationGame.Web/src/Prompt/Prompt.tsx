@@ -6,7 +6,7 @@ import connection from '../signalr-connection';
 function Prompt() {
   const navigate = useNavigate();
   const location = useLocation();
-  const defaultPrompt = location.state?.defaultPrompt;
+  const defaultPrompt: string = location.state?.defaultPrompt;
 
   const [prompt, setPrompt] = useState<string>(defaultPrompt);
   const [promptSent, setPromptSent] = useState(false);

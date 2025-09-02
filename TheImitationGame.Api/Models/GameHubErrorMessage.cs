@@ -16,6 +16,9 @@
             GameHubErrorCode.StartGame_NoJoinerInGame => "You cannot start a game which is empty.",
             GameHubErrorCode.StartGame_AlreadyStartedGame => "Your game has already been started.",
 
+            GameHubErrorCode.StartNextRound_NoGameToStartNextRound => "You are not hosting a game.",
+            GameHubErrorCode.StartNextRound_NotInBetweenRoundsPhase => "This game is not in the prompting phase.",
+
             GameHubErrorCode.SubmitPrompt_NotInAGame => "You are not in a game.",
             GameHubErrorCode.SubmitPrompt_NotInPromptingPhase => "This game is not in the prompting phase.",
             GameHubErrorCode.SubmitPrompt_NotPrompter => "You are not currently the prompter for this game.",

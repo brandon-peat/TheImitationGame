@@ -14,6 +14,9 @@
         StartGame_NoJoinerInGame,
         StartGame_AlreadyStartedGame,
 
+        StartNextRound_NoGameToStartNextRound,
+        StartNextRound_NotInBetweenRoundsPhase,
+
         SubmitPrompt_NotInAGame,
         SubmitPrompt_NotInPromptingPhase,
         SubmitPrompt_NotPrompter,

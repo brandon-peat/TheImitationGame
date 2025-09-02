@@ -43,10 +43,22 @@ function Draw() {
     }
     connection.on('AwaitImitations', handleAwaitImitations);
 
+    const handleCorrectGuessAsHost = (roundNumber: number) => {
+      navigate('/next-round', { state: { roundNumber: roundNumber, role: 'drawer', isHost: true } });
+    }
+    connection.on('CorrectGuess-StartBetweenRoundsPhase', handleCorrectGuessAsHost);
+
+    const handleCorrectGuessAsJoiner = (roundNumber: number) => {
+      navigate('/next-round', { state: { roundNumber: roundNumber, role: 'drawer', isHost: false } });
+    }
+    connection.on('CorrectGuess-AwaitNextRoundStart', handleCorrectGuessAsJoiner);
+
     return () => {
       connection.off('DrawTimerStarted', handleDrawTimerStarted);
       connection.off('AwaitGuess', handleAwaitGuess);
       connection.off('AwaitImitations', handleAwaitImitations);
+      connection.off('CorrectGuess-AwaitNextRoundStart', handleCorrectGuessAsHost);
+      connection.on('CorrectGuess-AwaitNextRoundStart', handleCorrectGuessAsJoiner);
     }
   }, []);
 
@@ -90,6 +102,7 @@ function Draw() {
             {imitations.map((image, i) => (
               i === realImageIndex ? null : (
                 <img
+                  key={i}
                   src={`data:image/jpeg;base64,${image}`}
                   className='w-[512px] h-[512px] rounded-2xl shadow-xl'
                 />

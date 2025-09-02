@@ -15,9 +15,21 @@ function Guess() {
       setImages(images);
     }
     connection.on('GuessTimerStarted', handleGuessTimerStarted);
+
+    const handleCorrectGuess = (roundNumber: number) => {
+      navigate('/next-round', { state: { roundNumber: roundNumber, role: 'prompter', isHost: true } });
+    }
+    connection.on('CorrectGuess-StartBetweenRoundsPhase', handleCorrectGuess);
+
+    const handleCorrectGuessAsJoiner = (roundNumber: number) => {
+      navigate('/next-round', { state: { roundNumber: roundNumber, role: 'prompter', isHost: false } });
+    }
+    connection.on('CorrectGuess-AwaitNextRoundStart', handleCorrectGuessAsJoiner);
     
     return () => {
       connection.off('GuessTimerStarted', handleGuessTimerStarted);
+      connection.off('CorrectGuess-StartBetweenRoundsPhase', handleCorrectGuess);
+      connection.on('CorrectGuess-AwaitNextRoundStart', handleCorrectGuessAsJoiner);
     }
   }, []);
 

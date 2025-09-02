@@ -59,7 +59,7 @@ namespace TheImitationGame.Api.Hubs
             await Clients.Client(gameId).SendAsync("GameJoined");
         }
 
-        public async Task StartGame(bool isHostFirst)
+        public async Task StartGame(bool hostIsPrompter)
         {
             var game = GetGameByHost(Context.ConnectionId)
                 ?? throw new GameHubException(GameHubErrorCode.StartGame_NoGameToStart);
@@ -70,19 +70,36 @@ namespace TheImitationGame.Api.Hubs
             if (game.State != GameState.NotStarted)
                 throw new GameHubException(GameHubErrorCode.StartGame_AlreadyStartedGame);
 
+            await BeginRound(game, hostIsPrompter);
+        }
+
+        public async Task StartNextRound()
+        {
+            var game = GetGameByHost(Context.ConnectionId)
+                ?? throw new GameHubException(GameHubErrorCode.StartNextRound_NoGameToStartNextRound);
+
+            if (game.State != GameState.BetweenRounds)
+                throw new GameHubException(GameHubErrorCode.StartNextRound_NotInBetweenRoundsPhase);
+
+            bool hostIsPrompter = (game.Prompter == Role.Host);
+            await BeginRound(game, hostIsPrompter);
+        }
+
+        async Task BeginRound(Game game, bool hostIsPrompter)
+        {
             // TODO: get this from an LLM
             const string defaultPrompt = "A cat exploding";
-
-            var startedGame = game.With(
+            var updatedGame = game.With(
                 state: GameState.Prompting,
                 prompt: defaultPrompt,
-                prompter: isHostFirst ? Role.Host : Role.Joiner);
+                prompter: hostIsPrompter ? Role.Host : Role.Joiner
+            );
 
-            if (!Games.TryUpdate(game.HostConnectionId, startedGame, game))
+            if (!Games.TryUpdate(game.HostConnectionId, updatedGame, game))
                 throw new GameHubException(GameHubErrorCode.UnknownError);
 
-            var prompter = isHostFirst ? game.HostConnectionId : game.JoinerConnectionId;
-            var drawer = isHostFirst ? game.JoinerConnectionId : game.HostConnectionId;
+            var prompter = hostIsPrompter ? game.HostConnectionId : game.JoinerConnectionId;
+            var drawer = hostIsPrompter ? game.JoinerConnectionId : game.HostConnectionId;
 
             await Clients.Client(prompter!).SendAsync("PromptTimerStarted", defaultPrompt);
             await Clients.Client(drawer!).SendAsync("AwaitPrompt");
@@ -128,7 +145,6 @@ namespace TheImitationGame.Api.Hubs
             await Clients.Client(drawer!).SendAsync("AwaitImitations");
             await Clients.Client(prompter!).SendAsync("AwaitImitations");
 
-            // TODO: increment each round
             int imitationsAmount = game.MaximumImages - 1;
             var imitations = await ImitationGenerator.GenerateImitations(game.Prompt!, image_b64, imitationsAmount);
 
@@ -164,21 +180,19 @@ namespace TheImitationGame.Api.Hubs
 
             bool correctGuess = guessIndex == game.RealImageIndex;
 
-            if (correctGuess) // Continue to the next round with swapped roles and more fakes
+            if (correctGuess) // Proceed to the next round when host calls StartNextRound
             {
                 Game updatedGame = game.With(
                     state: GameState.BetweenRounds,
-                    prompt: null,
                     prompter: (game.Prompter == Role.Host) ? Role.Joiner : Role.Host,
                     maximumImages: game.MaximumImages + 1,
-                    realImageIndex: null
+                    roundNumber: game.RoundNumber + 1
                 );
-
                 if (!Games.TryUpdate(game.HostConnectionId, updatedGame, game))
                     throw new GameHubException(GameHubErrorCode.UnknownError);
 
-                await Clients.Client(game.HostConnectionId).SendAsync("CorrectGuess-StartBetweenRoundsPhase");
-                await Clients.Client(game.JoinerConnectionId!).SendAsync("CorrectGuess-AwaitNextRoundStart");
+                await Clients.Client(game.HostConnectionId).SendAsync("CorrectGuess-StartBetweenRoundsPhase", updatedGame.RoundNumber);
+                await Clients.Client(game.JoinerConnectionId!).SendAsync("CorrectGuess-AwaitNextRoundStart", updatedGame.RoundNumber);
             }
             else // The game ends
             {

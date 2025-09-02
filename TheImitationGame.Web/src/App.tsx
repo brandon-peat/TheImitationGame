@@ -3,13 +3,14 @@ import { useEffect, useState } from 'react';
 import { Route, Routes, useLocation, useNavigate, useNavigationType } from 'react-router-dom';
 import './App.css';
 import Draw from './Draw/Draw';
+import End from './End/End';
 import Home from './Home/Home';
 import Host from './Host/Host';
 import Join from './Join/Join';
+import NextRound from './NextRound/NextRound';
 import Guess from './Prompt/Guess/Guess';
 import Prompt from './Prompt/Prompt';
 import connection from './signalr-connection';
-import End from './End/End';
 
 function App() {
   const [connectionReady, setConnectionReady] = useState(false);
@@ -75,6 +76,7 @@ function App() {
         <Route path='/prompt' element={<Prompt />} />
         <Route path='/guess' element={<Guess />} />
         <Route path='/draw' element={<Draw />} />
+        <Route path='/next-round' element={<NextRound />} />
         <Route path='/end' element={<End />} />
       </Routes>
 

@@ -7,7 +7,7 @@
         Prompting,
         Drawing,
         Guessing,
-        BetweenRounds,
+        BetweenRounds
     }
 
     public enum Role
@@ -25,6 +25,7 @@
         public Role? Prompter { get; set; }
         public int MaximumImages { get; set; }
         public int? RealImageIndex { get; set; }
+        public int RoundNumber { get; set; }
 
         public Game(
             string hostConnectionId,
@@ -33,7 +34,8 @@
             string? prompt = null,
             Role? prompter = null,
             int maximumImages = 4,
-            int? realImageIndex = null)
+            int? realImageIndex = null,
+            int roundNumber = 1)
         {
             HostConnectionId = hostConnectionId;
             JoinerConnectionId = joinerConnectionId;
@@ -42,6 +44,7 @@
             Prompter = prompter;
             MaximumImages = maximumImages;
             RealImageIndex = realImageIndex;
+            RoundNumber = roundNumber;
         }
 
         public Game With(
@@ -51,7 +54,8 @@
             string? prompt = null,
             Role? prompter = null,
             int? maximumImages = null,
-            int? realImageIndex = null)
+            int? realImageIndex = null,
+            int? roundNumber = null)
         {
             return new Game(
                 hostConnectionId ?? HostConnectionId,
@@ -60,7 +64,8 @@
                 prompt ?? Prompt,
                 prompter ?? Prompter,
                 maximumImages ?? MaximumImages,
-                realImageIndex ?? RealImageIndex
+                realImageIndex ?? RealImageIndex,
+                roundNumber ?? RoundNumber
             );
         }
     }

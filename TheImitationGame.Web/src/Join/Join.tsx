@@ -1,6 +1,6 @@
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { IconButton, TextField } from "@mui/material";
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import connection from '../signalr-connection';
 import { JoinGameErrorCodes } from './JoinGameErrorCode';
@@ -9,18 +9,15 @@ function Join() {
   const [joinResultMessage, setJoinResultMessage] = useState<string>('');
   const [gameJoined, setGameJoined] = useState<boolean>(false);
 
-  const navigatingInternally = useRef(false);
   const navigate = useNavigate();
 
   useEffect(() => {
     const handleGameStartedAsPrompter = (defaultPrompt: string) => {
-      navigatingInternally.current = true;
       navigate('/prompt', { state: { defaultPrompt } });
     }
     connection.on('PromptTimerStarted', handleGameStartedAsPrompter);
 
     const handleGameStartedAsDrawer = () => {
-      navigatingInternally.current = true;
       navigate('/draw');
     }
     connection.on('AwaitPrompt', handleGameStartedAsDrawer);

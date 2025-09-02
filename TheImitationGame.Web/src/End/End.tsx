@@ -6,13 +6,12 @@ function End() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const won = location.state?.won;
-  const wrongImage = location.state?.wrongImage;
-  const realImage = location.state?.realImage;
+  const won: boolean = location.state?.won;
+  const wrongImage: string = location.state?.wrongImage;
+  const realImage: string = location.state?.realImage;
 
   useEffect(() => {
-    console.log(won, wrongImage, realImage);
-    if(!wrongImage || !realImage || won == null) navigate('/');
+    if(won === undefined || !wrongImage || !realImage) navigate('/');
   }, []);
 
   return (
@@ -34,7 +33,7 @@ function End() {
       </div>
 
       <Typography variant='subtitle1'>
-        {won ? 'Their ' : 'Your '}
+        {won ? "Your opponent's " : 'Your '}
         guess (red) was incorrect.
         {won ? ' Your ' : " Your opponent's "}
         drawing (green) is the real one.

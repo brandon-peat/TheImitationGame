@@ -6,6 +6,7 @@ import UndoIcon from '@mui/icons-material/Undo';
 import { Button, IconButton } from '@mui/material';
 import { useRef, useState } from 'react';
 import { ReactSketchCanvas, type ReactSketchCanvasRef } from 'react-sketch-canvas';
+import ScrollingEllipsis from '../../ScrollingEllipsis';
 
 type CanvasProps = {
   onSubmitDrawing: (imageDataUrl: string) => void;
@@ -40,7 +41,10 @@ function Canvas({ onSubmitDrawing, submitDisabled }: CanvasProps) {
           onClick={handleSubmitClick}
           disabled={submitDisabled}
         >
-          {submitClicked ? 'AI is generating imitations . . .' : 'Submit Drawing'}
+          {submitClicked
+            ? (<> AI is generating imitations&nbsp;<ScrollingEllipsis /> </>)
+            : 'Submit Drawing'
+          }
         </Button>
       </div>
 

@@ -1,7 +1,9 @@
 import { Button, Typography } from "@mui/material";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import ScrollingEllipsis from "../../ScrollingEllipsis";
 import connection from "../../signalr-connection";
+import WaitingSpinner from "../../WaitingSpinner";
 
 function Guess() {
   const navigate = useNavigate();
@@ -48,9 +50,13 @@ function Guess() {
 
   return (
     (images.length === 0) ? (
-      <Typography variant='subtitle1' sx={{ textAlign: 'center' }}>
-        AI is generating imitations . . .
-      </Typography>
+      <div className='flex items-center justify-center gap-2 text-center'>
+        <WaitingSpinner />
+
+        <Typography className='text-gray-700' variant='subtitle1'>
+          AI is generating imitations <ScrollingEllipsis />
+        </Typography>
+      </div>
     ) : (
       <>
         <Typography variant='subtitle1' sx={{ textAlign: 'center' }}>

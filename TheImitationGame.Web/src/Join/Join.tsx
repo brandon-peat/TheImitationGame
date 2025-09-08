@@ -1,12 +1,14 @@
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
-import { IconButton, InputAdornment, TextField } from "@mui/material";
+import { IconButton, InputAdornment, TextField, Typography } from "@mui/material";
 import Alert from '@mui/material/Alert';
 import Snackbar from '@mui/material/Snackbar';
 import { motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import ScrollingEllipsis from '../ScrollingEllipsis';
 import connection from '../signalr-connection';
+import WaitingSpinner from '../WaitingSpinner';
 
 function Join() {
   const [gameCodeInput, setGameCodeInput] = useState("");
@@ -91,9 +93,9 @@ function Join() {
           autoFocus
           error={inputShake}
           disabled={gameJoined}
-          label={gameJoined ? 'Waiting for host to start . . .' : 'Enter Game Code'}
+          label={gameJoined ? gameCodeInput : 'Enter Game Code'}
           variant={gameJoined ? 'filled' : 'outlined'}
-          value={gameCodeInput}
+          value={gameJoined ? '' : gameCodeInput}
           onChange={(e) => setGameCodeInput(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === 'Enter' && gameCodeInput) {
@@ -122,6 +124,18 @@ function Join() {
         />
       </motion.div>
 
+      <div className='flex-break' />
+
+      {gameJoined && (
+        <div className='flex items-center justify-center gap-2 text-center'>
+          <WaitingSpinner />
+
+          <Typography className='text-gray-700'>
+            Waiting for the host to start the game <ScrollingEllipsis />
+          </Typography>
+        </div>
+      )}
+
       <Snackbar
         open={errorOpen}
         autoHideDuration={2000}
@@ -130,8 +144,8 @@ function Join() {
       >
         <Alert
           onClose={() => setErrorOpen(false)}
-          severity="error"
-          variant="filled"
+          severity='error'
+          variant='filled'
           sx={{ width: '100%' }}
         >
           {snackbarMessage}

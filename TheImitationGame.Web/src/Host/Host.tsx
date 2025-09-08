@@ -1,5 +1,5 @@
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import { Button, FormControl, IconButton, TextField } from "@mui/material";
+import { Button, FormControl, IconButton, InputAdornment, TextField } from "@mui/material";
 import FormControlLabel from '@mui/material/FormControlLabel';
 import FormLabel from '@mui/material/FormLabel';
 import Radio from '@mui/material/Radio';
@@ -7,6 +7,7 @@ import RadioGroup from '@mui/material/RadioGroup';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import connection from '../signalr-connection';
+import CopyCodeButton from './CopyCodeButton/CopyCodeButton';
 
 function Host() {
   const [gameCode, setGameCode] = useState<string>('');
@@ -63,7 +64,16 @@ function Host() {
         label={gameJoined ? 'Game Joined!' : 'Share this code with the other player!'}
         defaultValue= {gameCode}
         variant='filled'
-        slotProps={{ inputLabel: {shrink: true }}}
+        slotProps={{
+          inputLabel: {shrink: true },
+          input: {
+            endAdornment: (
+              <InputAdornment position='end'>
+                <CopyCodeButton code={gameCode} />
+              </InputAdornment>
+            )
+          }
+        }}
       />
 
       <div className='flex-break' />

@@ -7,23 +7,27 @@ import { Button, IconButton } from '@mui/material';
 import { useRef, useState } from 'react';
 import { ReactSketchCanvas, type ReactSketchCanvasRef } from 'react-sketch-canvas';
 import ScrollingEllipsis from '../../ScrollingEllipsis';
+import Timer from '../../Timer/Timer';
 
 type CanvasProps = {
   onSubmitDrawing: (imageDataUrl: string) => void;
   submitDisabled: boolean;
 };
 function Canvas({ onSubmitDrawing, submitDisabled }: CanvasProps) {
+  const timerDurationSeconds: number = 120;
+
   const canvasRef = useRef<ReactSketchCanvasRef>(null);
   const [eraseMode, setEraseMode] = useState(false);
   const [submitClicked, setSubmitClicked] = useState(false);
 
-  async function handleSubmitClick() {
+  const handleSubmitClick = async () => {
     if (canvasRef.current) {
       const imageDataUrl = await canvasRef.current.exportImage('jpeg');
       setSubmitClicked(true);
       onSubmitDrawing(imageDataUrl);
     }
   }
+  
   return (
     <div className='flex gap-4 justify-center w-4/5 h-4/5'>
       <div className='flex flex-col  gap-y-2'>
@@ -90,6 +94,13 @@ function Canvas({ onSubmitDrawing, submitDisabled }: CanvasProps) {
             <ReplayIcon />
           </IconButton>
         </div>
+      </div>
+      
+      <div className='absolute top-4 right-4'>
+        <Timer
+          durationSeconds={timerDurationSeconds}
+          onTimeout={handleSubmitClick}
+        />
       </div>
     </div>
   );

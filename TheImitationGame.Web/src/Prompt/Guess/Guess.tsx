@@ -3,13 +3,16 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import ScrollingEllipsis from "../../ScrollingEllipsis";
 import connection from "../../signalr-connection";
+import Timer from "../../Timer/Timer";
 import WaitingSpinner from "../../WaitingSpinner";
 
 function Guess() {
+  const timerDurationSeconds: number = 30;
+
   const navigate = useNavigate();
 
   const [images, setImages] = useState<string[]>([]);
-  const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
+  const [selectedImageIndex, setSelectedImageIndex] = useState<number>(0);
   const [guessSubmitted, setGuessSubmitted] = useState(false);
 
   useEffect(() => {
@@ -48,6 +51,15 @@ function Guess() {
     }
   }, [images, selectedImageIndex]);
 
+  const submitGuess = () => {
+    if (guessSubmitted) return;
+    setGuessSubmitted(true);
+    connection.invoke('SubmitGuess', selectedImageIndex)
+      .catch((error) => {
+        console.error('Error submitting guess:', error);
+      });
+  }
+
   return (
     (images.length === 0) ? (
       <div className='flex items-center justify-center gap-2 text-center'>
@@ -84,17 +96,18 @@ function Guess() {
         <Button
           variant='contained'
           color='primary'
-          disabled={selectedImageIndex === null || guessSubmitted}
-          onClick={() => {
-            setGuessSubmitted(true);
-            connection.invoke('SubmitGuess', selectedImageIndex)
-              .catch((error) => {
-                console.error('Error submitting guess:', error);
-              });
-          }}
+          disabled={guessSubmitted}
+          onClick={submitGuess}
         >
           Submit Guess
         </Button>
+
+        <div className='absolute top-4 right-4'>
+          <Timer
+            durationSeconds={timerDurationSeconds}
+            onTimeout={submitGuess}
+          />
+        </div>
       </>
     )
   )

@@ -96,12 +96,10 @@ function Canvas({ onSubmitDrawing, submitDisabled }: CanvasProps) {
         </div>
       </div>
       
-      <div className='absolute top-4 right-4'>
-        <Timer
-          durationSeconds={timerDurationSeconds}
-          onTimeout={handleSubmitClick}
-        />
-      </div>
+      <Timer
+        durationSeconds={timerDurationSeconds}
+        onTimeout={handleSubmitClick}
+      />
     </div>
   );
 }

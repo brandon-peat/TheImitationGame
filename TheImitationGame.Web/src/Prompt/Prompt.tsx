@@ -56,19 +56,17 @@ function Prompt() {
       />
 
       {!promptSent &&
-        <div className='absolute top-4 right-4'>
-          <Timer
-            durationSeconds={timerDurationSeconds}
-            onTimeout={() => {
-              const finalPrompt = prompt.trim() || defaultPrompt.trim();
+        <Timer
+          durationSeconds={timerDurationSeconds}
+          onTimeout={() => {
+            const finalPrompt = prompt.trim() || defaultPrompt.trim();
 
-              connection.invoke('SubmitPrompt', finalPrompt)
-                .catch((error) => {
-                  console.error('Error submitting prompt on timeout:', error);
-                });
-            }}
-          />
-        </div>
+            connection.invoke('SubmitPrompt', finalPrompt)
+              .catch((error) => {
+                console.error('Error submitting prompt on timeout:', error);
+              });
+          }}
+        />
       }
     </>
   );

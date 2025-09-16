@@ -102,12 +102,10 @@ function Guess() {
           Submit Guess
         </Button>
 
-        <div className='absolute top-4 right-4'>
-          <Timer
-            durationSeconds={timerDurationSeconds}
-            onTimeout={submitGuess}
-          />
-        </div>
+        <Timer
+          durationSeconds={timerDurationSeconds}
+          onTimeout={submitGuess}
+        />
       </>
     )
   )

@@ -31,37 +31,39 @@ function Timer({ durationSeconds, onTimeout }: TimerProps) {
   const color = `hsl(${hue}, 100%, 50%)`;
 
   return (
-    <div className='relative w-16 h-16'>
-      {/* Track circle */}
-      <CircularProgress
-        variant='determinate'
-        value={100}
-        size={64}
-        thickness={5}
-        style={{ color: '#e0e0e0', position: 'absolute', left: 0, top: 0 }}
-      />
+    <div className='absolute top-4 right-4'>
+      <div className='relative w-16 h-16'>
+        {/* Track circle */}
+        <CircularProgress
+          variant='determinate'
+          value={100}
+          size={64}
+          thickness={5}
+          style={{ color: '#e0e0e0', position: 'absolute', left: 0, top: 0 }}
+        />
 
-      {/* Countdown circle */}
-      <CircularProgress
-        variant='determinate'
-        value={progress}
-        size={64}
-        thickness={5}
-        style={{ color }}
-      />
+        {/* Countdown circle */}
+        <CircularProgress
+          variant='determinate'
+          value={progress}
+          size={64}
+          thickness={5}
+          style={{ color }}
+        />
 
-      <div className='absolute inset-0 flex items-center justify-center font-bold'>
-        <AnimatePresence mode='wait'>
-          <motion.span
-            key={Math.round(timeLeft)}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.125 }}
-          >
-            {Math.round(timeLeft)}
-          </motion.span>
-        </AnimatePresence>
+        <div className='absolute inset-0 flex items-center justify-center font-bold'>
+          <AnimatePresence mode='wait'>
+            <motion.span
+              key={Math.round(timeLeft)}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.125 }}
+            >
+              {Math.round(timeLeft)}
+            </motion.span>
+          </AnimatePresence>
+        </div>
       </div>
     </div>
   );

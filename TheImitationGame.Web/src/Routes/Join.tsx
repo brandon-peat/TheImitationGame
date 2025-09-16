@@ -6,9 +6,9 @@ import Snackbar from '@mui/material/Snackbar';
 import { motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import ScrollingEllipsis from '../ScrollingEllipsis';
-import connection from '../signalr-connection';
-import WaitingSpinner from '../WaitingSpinner';
+import connection from '../Utilities/signalr-connection';
+import ScrollingEllipsis from '../Utilities/ScrollingEllipsis';
+import WaitingSpinner from '../Utilities/WaitingSpinner';
 
 function Join() {
   const [gameCodeInput, setGameCodeInput] = useState("");
@@ -70,64 +70,63 @@ function Join() {
   }
 
   return (
-    <div className='mode-area'>
-      <IconButton onClick={() => {
-          navigate('/');
-          if (gameJoined) {
-            connection.invoke('LeaveGame')
-              .catch((error) => {
-                console.error('Error leaving game:', error);
-              });
-          }
-      }}>
-        <ArrowBackIcon />
-      </IconButton>
-
-      <motion.div
-        className='w-full max-w-xs'
-        animate={inputShake ? { x: [0, -5, 5, -5, 5, 0] } : {}}
-        transition={{ duration: 0.4, ease: 'easeInOut' }}
-      >
-        <TextField
-          className='w-full'
-          autoFocus
-          error={inputShake}
-          disabled={gameJoined}
-          label={gameJoined ? gameCodeInput : 'Enter Game Code'}
-          variant={gameJoined ? 'filled' : 'outlined'}
-          value={gameJoined ? '' : gameCodeInput}
-          onChange={(e) => setGameCodeInput(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && gameCodeInput) {
-              submitGameCode(gameCodeInput.trim());
+    <>
+      <div className='flex flex-wrap gap-[0.5rem]'>
+        <IconButton onClick={() => {
+            navigate('/');
+            if (gameJoined) {
+              connection.invoke('LeaveGame')
+                .catch((error) => {
+                  console.error('Error leaving game:', error);
+                });
             }
-          }}
-          slotProps={{
-            input: {
-              autoComplete: 'off',
-              endAdornment: !gameJoined && (
-                <InputAdornment position='end'>
-                  <IconButton
-                    edge='end'
-                    onMouseDown={(e) => e.preventDefault()} // So the input stays focused
-                    onClick={() => {
-                      if (gameCodeInput)
-                        submitGameCode(gameCodeInput.trim());
-                    }}
-                  >
-                    <ArrowForwardIcon />
-                  </IconButton>
-                </InputAdornment>
-              ),
-            },
-          }}
-        />
-      </motion.div>
+        }}>
+          <ArrowBackIcon />
+        </IconButton>
 
-      <div className='flex-break' />
+        <motion.div
+          animate={inputShake ? { x: [0, -5, 5, -5, 5, 0] } : {}}
+          transition={{ duration: 0.4, ease: 'easeInOut' }}
+        >
+          <TextField
+            className='w-xs'
+            autoFocus
+            error={inputShake}
+            disabled={gameJoined}
+            label={gameJoined ? gameCodeInput : 'Enter Game Code'}
+            variant={gameJoined ? 'filled' : 'outlined'}
+            value={gameJoined ? '' : gameCodeInput}
+            onChange={(e) => setGameCodeInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && gameCodeInput) {
+                submitGameCode(gameCodeInput.trim());
+              }
+            }}
+            slotProps={{
+              input: {
+                autoComplete: 'off',
+                endAdornment: !gameJoined && (
+                  <InputAdornment position='end'>
+                    <IconButton
+                      edge='end'
+                      onMouseDown={(e) => e.preventDefault()} // So the input stays focused
+                      onClick={() => {
+                        if (gameCodeInput)
+                          submitGameCode(gameCodeInput.trim());
+                      }}
+                    >
+                      <ArrowForwardIcon />
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              },
+            }}
+          />
+        </motion.div>
+      </div>
 
       {gameJoined && (
-        <div className='flex items-center justify-center gap-2 text-center'>
+        <div className='flex items-center justify-center gap-2'>
           <WaitingSpinner />
 
           <Typography className='text-gray-700'>
@@ -146,12 +145,11 @@ function Join() {
           onClose={() => setErrorOpen(false)}
           severity='error'
           variant='filled'
-          sx={{ width: '100%' }}
         >
           {snackbarMessage}
         </Alert>
       </Snackbar>
-    </div>
+    </>
   );
 }
 

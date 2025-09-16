@@ -35,11 +35,12 @@ function Timer({ durationSeconds, onTimeout }: TimerProps) {
       <div className='relative w-16 h-16'>
         {/* Track circle */}
         <CircularProgress
+          className='absolute left-0 top-0 text-[#e0e0e0]'
           variant='determinate'
           value={100}
           size={64}
           thickness={5}
-          style={{ color: '#e0e0e0', position: 'absolute', left: 0, top: 0 }}
+          color='inherit'
         />
 
         {/* Countdown circle */}

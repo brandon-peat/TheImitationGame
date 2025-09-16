@@ -1,8 +1,8 @@
 import { TextField } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import connection from '../signalr-connection';
-import Timer from '../Timer/Timer';
+import connection from '../Utilities/signalr-connection';
+import Timer from '../Utilities/Timer';
 
 function Prompt() {
   const timerDurationSeconds: number = 30;
@@ -35,7 +35,7 @@ function Prompt() {
 
   return (
     <>
-      <TextField sx={{ width: '60%' }}
+      <TextField className='w-lg max-w-full'
         label={promptSent ? 'Your opponent is now drawing based on your prompt.' : 'What should your opponent draw?'}
         disabled={promptSent}
         defaultValue={prompt}

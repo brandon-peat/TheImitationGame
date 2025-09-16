@@ -1,12 +1,11 @@
 import { Button } from "@mui/material";
 import { useNavigate } from 'react-router-dom';
-import styles from './Home.module.css';
 
 function Home() {
   const navigate = useNavigate();
 
   return (
-    <div className={styles['buttons']}>
+    <div className='flex justify-center items-center gap-[3rem]'>
       <Button
         variant='contained'
         color='primary'

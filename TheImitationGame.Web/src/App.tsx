@@ -1,16 +1,15 @@
 import Typography from '@mui/material/Typography';
 import { useEffect, useState } from 'react';
 import { Route, Routes, useLocation, useNavigate, useNavigationType } from 'react-router-dom';
-import './App.css';
-import Draw from './Draw/Draw';
-import End from './End/End';
-import Home from './Home/Home';
-import Host from './Host/Host';
-import Join from './Join/Join';
-import NextRound from './NextRound/NextRound';
-import Guess from './Prompt/Guess/Guess';
-import Prompt from './Prompt/Prompt';
-import connection from './signalr-connection';
+import Draw from './Routes/Draw/Draw';
+import End from './Routes/End';
+import Guess from './Routes/Guess';
+import Home from './Routes/Home';
+import Host from './Routes/Host/Host';
+import Join from './Routes/Join';
+import NextRound from './Routes/NextRound';
+import Prompt from './Routes/Prompt';
+import connection from './Utilities/signalr-connection';
 
 function App() {
   const [connectionReady, setConnectionReady] = useState(false);
@@ -55,12 +54,12 @@ function App() {
   }, [location.pathname]);
 
   return (
-    <div className='page'>
-      <Typography variant='h3' sx={{ textAlign: 'center' }}>
+    <div className='flex flex-col items-center gap-[1.5rem] p-[1.5rem] w-[60vw] min-w-md m-auto text-center'>
+      <Typography variant='h3'>
         The Imitation Game
       </Typography>
 
-      <Typography gutterBottom variant='body2' sx={{ textAlign: 'center' }}>
+      <Typography gutterBottom variant='body2'>
         In this game, you and your opponent will alternate between giving prompts, drawing from those
         prompts, and trying to tell apart the real drawing from AI fakes.
         <br />
@@ -81,7 +80,7 @@ function App() {
       </Routes>
 
       {message && (
-        <Typography variant='body2' sx={{ textAlign: 'center' }}>
+        <Typography variant='body2'>
           {message}
         </Typography>
       )}

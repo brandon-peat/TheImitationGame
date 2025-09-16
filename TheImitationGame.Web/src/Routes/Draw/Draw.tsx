@@ -1,7 +1,7 @@
 import Typography from '@mui/material/Typography';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import connection from '../signalr-connection';
+import connection from '../../Utilities/signalr-connection';
 import Canvas from './Canvas/Canvas';
 
 function Draw() {
@@ -76,17 +76,17 @@ function Draw() {
 
   return (
     awaitingPrompt ? (
-      <Typography variant='subtitle1' sx={{ textAlign: 'center' }}>
+      <Typography variant='subtitle1'>
         Your opponent is coming up with a prompt. Get ready to draw!
       </Typography>
     ) : (
       awaitingGuess ? (
         <>
-          <Typography variant='subtitle1' sx={{ textAlign: 'center' }}>
+          <Typography variant='subtitle1'>
             Your opponent has received the following images and is now guessing.
           </Typography>
 
-          <Typography variant='subtitle2' sx={{ textAlign: 'center' }}>
+          <Typography variant='subtitle2'>
             Your drawing:
           </Typography>
 
@@ -94,7 +94,7 @@ function Draw() {
             src={`data:image/jpeg;base64,${realImage}`}
             className='w-[512px] h-[512px] rounded-2xl shadow-xl' />
 
-          <Typography variant='subtitle2' sx={{ textAlign: 'center' }}>
+          <Typography variant='subtitle2'>
             AI imitations: 
           </Typography>
 
@@ -113,11 +113,11 @@ function Draw() {
       ) : (
         <>
           <div>
-            <Typography variant='subtitle2' sx={{ textAlign: 'center', marginTop: 0 }}>
+            <Typography variant='subtitle2'>
               Your prompt is . . .
             </Typography>
 
-            <Typography variant='h6' sx={{ textAlign: 'center' }}>
+            <Typography variant='h6'>
               {prompt}
             </Typography>
           </div>

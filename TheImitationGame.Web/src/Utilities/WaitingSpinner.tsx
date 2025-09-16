@@ -20,10 +20,9 @@ function WaitingSpinner() {
 
   return (
     <motion.div
-      className='relative w-6 h-6 text-gray-500'
+      className='relative w-6 h-6 text-gray-500 origin-[50%_50%]'
       animate={controls}
       transition={{ duration: 0.8, ease: 'easeInOut' }}
-      style={{ transformOrigin: '50% 50%' }}
     >
       <motion.div
         className='absolute inset-0 flex items-center justify-center'

@@ -6,7 +6,7 @@ import Radio from '@mui/material/Radio';
 import RadioGroup from '@mui/material/RadioGroup';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import connection from '../signalr-connection';
+import connection from '../../Utilities/signalr-connection';
 import CopyCodeButton from './CopyCodeButton/CopyCodeButton';
 
 function Host() {
@@ -48,35 +48,35 @@ function Host() {
   }, []);
 
   return (
-    <div className='mode-area'>
-      <IconButton onClick={() => {
-          navigate('/');
-          connection.invoke('LeaveGame')
-            .catch((error) => {
-              console.error('Error leaving game:', error);
-            });
-        }}>
-        <ArrowBackIcon />
-      </IconButton>
+    <>
+      <div className='flex flex-wrap gap-[0.5rem]'>
+        <IconButton onClick={() => {
+            navigate('/');
+            connection.invoke('LeaveGame')
+              .catch((error) => {
+                console.error('Error leaving game:', error);
+              });
+          }}>
+          <ArrowBackIcon />
+        </IconButton>
 
-      <TextField className='code-input'
-        disabled
-        label={gameJoined ? 'Game Joined!' : 'Share this code with the other player!'}
-        defaultValue= {gameCode}
-        variant='filled'
-        slotProps={{
-          inputLabel: {shrink: true },
-          input: {
-            endAdornment: (
-              <InputAdornment position='end'>
-                <CopyCodeButton code={gameCode} />
-              </InputAdornment>
-            )
-          }
-        }}
-      />
-
-      <div className='flex-break' />
+        <TextField className='w-xs'
+          disabled
+          label={gameJoined ? 'Game Joined!' : 'Share this code with the other player!'}
+          defaultValue= {gameCode}
+          variant='filled'
+          slotProps={{
+            inputLabel: {shrink: true },
+            input: {
+              endAdornment: (
+                <InputAdornment position='end'>
+                  <CopyCodeButton code={gameCode} />
+                </InputAdornment>
+              )
+            }
+          }}
+        />
+      </div>
 
       {gameJoined && (
         <>
@@ -92,8 +92,6 @@ function Host() {
               <FormControlLabel value='Random' control={<Radio />} label='Random' />
             </RadioGroup>
           </FormControl>
-
-          <div className='flex-break' />
 
           <Button
             variant='contained'
@@ -112,7 +110,7 @@ function Host() {
           </Button>
         </>
       )}
-    </div>
+    </>
   );
 }
 

@@ -1,7 +1,7 @@
 import { Button, Typography } from "@mui/material";
 import { useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import connection from "../signalr-connection";
+import connection from "../Utilities/signalr-connection";
 
 type Role = 'prompter' | 'drawer';
 

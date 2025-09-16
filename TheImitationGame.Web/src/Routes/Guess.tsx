@@ -1,10 +1,10 @@
 import { Button, Typography } from "@mui/material";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import ScrollingEllipsis from "../../ScrollingEllipsis";
-import connection from "../../signalr-connection";
-import Timer from "../../Timer/Timer";
-import WaitingSpinner from "../../WaitingSpinner";
+import ScrollingEllipsis from "../Utilities/ScrollingEllipsis";
+import connection from "../Utilities/signalr-connection";
+import Timer from "../Utilities/Timer";
+import WaitingSpinner from "../Utilities/WaitingSpinner";
 
 function Guess() {
   const timerDurationSeconds: number = 30;
@@ -62,7 +62,7 @@ function Guess() {
 
   return (
     (images.length === 0) ? (
-      <div className='flex items-center justify-center gap-2 text-center'>
+      <div className='flex items-center justify-center gap-2'>
         <WaitingSpinner />
 
         <Typography className='text-gray-700' variant='subtitle1'>
@@ -71,7 +71,7 @@ function Guess() {
       </div>
     ) : (
       <>
-        <Typography variant='subtitle1' sx={{ textAlign: 'center' }}>
+        <Typography variant='subtitle1'>
           One of these is the real drawing, and the rest are AI imitations.
           Select the one you think is real and submit your guess.
         </Typography>

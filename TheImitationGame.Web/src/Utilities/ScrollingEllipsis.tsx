@@ -12,18 +12,18 @@ function ScrollingEllipsis() {
   }, []);
 
   return (
-    <span style={{ display: 'inline-block', width: '4ch', textAlign: 'left' }}>
+    <span className='text-left inline-block'>
       <AnimatePresence initial={false}>
         {Array.from({ length: 3 }, (_, i) => {
           const isVisible = i < count;
           return (
             <motion.span
+              className={'inline-block mr-[0.3rem]'}
               key={i}
               initial={{ opacity: 0 }}
               animate={{ opacity: isVisible ? 1 : 0 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.25 }}
-              style={{ display: 'inline-block', marginRight: i < 2 ? '0.3rem' : 0 }}
             >
               {'.'}
             </motion.span>

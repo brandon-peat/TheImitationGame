@@ -6,8 +6,8 @@ import UndoIcon from '@mui/icons-material/Undo';
 import { Button, IconButton } from '@mui/material';
 import { useRef, useState } from 'react';
 import { ReactSketchCanvas, type ReactSketchCanvasRef } from 'react-sketch-canvas';
-import ScrollingEllipsis from '../../ScrollingEllipsis';
-import Timer from '../../Timer/Timer';
+import ScrollingEllipsis from '../../../Utilities/ScrollingEllipsis';
+import Timer from '../../../Utilities/Timer';
 
 type CanvasProps = {
   onSubmitDrawing: (imageDataUrl: string) => void;

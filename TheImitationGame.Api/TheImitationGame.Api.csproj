@@ -14,4 +14,8 @@
     <Folder Include="Controllers\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\TheImitationGame.ServiceDefaults\TheImitationGame.ServiceDefaults.csproj" />
+  </ItemGroup>
+
 </Project>

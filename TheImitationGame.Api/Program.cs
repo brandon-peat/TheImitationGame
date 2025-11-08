@@ -2,8 +2,10 @@ using TheImitationGame.Api.Hubs;
 using TheImitationGame.Api.Interfaces;
 using TheImitationGame.Api.Services;
 using TheImitationGame.Api.Stores;
+using Microsoft.AspNetCore.Builder;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.AddServiceDefaults();
 
 var allowLocalhost5173 = "_allowLocalhost5173";
 

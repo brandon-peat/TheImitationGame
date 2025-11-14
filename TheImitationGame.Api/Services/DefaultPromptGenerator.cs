@@ -11,7 +11,7 @@ namespace TheImitationGame.Api.Services
         const string systemPrompt =
             "You are a prompt generator for a casual drawing game like Gartic Phone. " +
             "Reply with a single phrase suitable as a drawing prompt, with no surrounding quotes or extra commentary. " +
-            "There should be no full stop at the end of the prompt. " +
+            "There should be no full stop at the end of the prompt. Use UK English (e.g., football not soccer, colour not color). " +
             "The prompt should be a situation, character, or interaction that could be easily drawn. " +
             "The user may choose to use a different prompt to give to the other player than the one you generate, so yours should be simple and to-the-point";
         const string userPrompt = "Generate a short, simple, one-phrase drawing prompt.";
@@ -40,7 +40,7 @@ namespace TheImitationGame.Api.Services
                     new { role = "user", content = userPrompt }
                 },
                 max_tokens = 30,
-                temperature = 0.9
+                temperature = 1.1
             };
 
             var json = JsonSerializer.Serialize(requestBody);

@@ -3,13 +3,15 @@ using System.Diagnostics;
 using System.Text.Json;
 using TheImitationGame.Api.Interfaces;
 using TheImitationGame.Api.Models;
+using TheImitationGame.Api.Services;
 
 namespace TheImitationGame.Api.Hubs
 {
-    public class GameHub(IGamesStore games, IImitationGenerator imitationGenerator) : Hub
+    public class GameHub(IGamesStore games, IImitationGenerator imitationGenerator, DefaultPromptGenerator defaultPromptGenerator) : Hub
     {
         private readonly IGamesStore Games = games;
         private readonly IImitationGenerator ImitationGenerator = imitationGenerator;
+        private readonly DefaultPromptGenerator DefaultPromptGenerator = defaultPromptGenerator;
 
         public override async Task OnConnectedAsync()
         {
@@ -87,8 +89,7 @@ namespace TheImitationGame.Api.Hubs
 
         async Task BeginRound(Game game, bool hostIsPrompter)
         {
-            // TODO: get this from an LLM
-            const string defaultPrompt = "A cat exploding";
+            string defaultPrompt = await DefaultPromptGenerator.GenerateDefaultPromptAsync();
             var updatedGame = game.With(
                 state: GameState.Prompting,
                 prompt: defaultPrompt,

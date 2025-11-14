@@ -33,6 +33,7 @@ builder.Services.AddSignalR(options =>
 
 builder.Services.AddSingleton<IGamesStore, InMemoryGamesStore>();
 builder.Services.AddSingleton<IImitationGenerator, ImitationGenerator>();
+builder.Services.AddSingleton<DefaultPromptGenerator>();
 
 var app = builder.Build();
 

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.SignalR;
 using TheImitationGame.Api.Hubs;
 using TheImitationGame.Api.Models;
 using TheImitationGame.Api.Interfaces;
+using TheImitationGame.Api.Services;
 
 namespace TheImitationGame.Tests
 {
@@ -14,6 +15,7 @@ namespace TheImitationGame.Tests
         private readonly Mock<IGamesStore> mockGamesStore = new();
         private readonly Mock<HubCallerContext> mockContext = new();
         private readonly Mock<IImitationGenerator> mockImitationGenerator = new();
+        private readonly Mock<DefaultPromptGenerator> mockDefaultPromptGenerator = new();
 
         private readonly string connectionId = "test-connection-id";
         private readonly string hostConnectionId = "host-connection-id";
@@ -28,8 +30,9 @@ namespace TheImitationGame.Tests
         public GameHubTests()
         {
             mockContext.Setup(context => context.ConnectionId).Returns(connectionId);
+            mockDefaultPromptGenerator.Setup(x => x.GenerateDefaultPromptAsync()).ReturnsAsync("mock prompt");
 
-            hub = new GameHub(mockGamesStore.Object, mockImitationGenerator.Object)
+            hub = new GameHub(mockGamesStore.Object, mockImitationGenerator.Object, mockDefaultPromptGenerator.Object)
             {
                 Clients = mockClients.Object,
                 Groups = mockGroups.Object,
